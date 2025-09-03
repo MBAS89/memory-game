@@ -19,4 +19,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default GridContainer;
+export default React.memo(GridContainer);

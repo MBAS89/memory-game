@@ -18,7 +18,7 @@ const HomeScreen = () => {
 
   const [countdown, setCountdown] = useState('');
 
-  // Handle daily challenge reset
+  // Daily challenge reset & countdown
   useEffect(() => {
     const checkReset = () => {
       if (lastDailyChallengeDate && !isToday(lastDailyChallengeDate)) {
@@ -31,7 +31,7 @@ const HomeScreen = () => {
       if (lastDailyChallengeDate && !isToday(lastDailyChallengeDate)) {
         setLastDailyChallengeDate(null);
         clearInterval(interval);
-      } else {
+      } else if (lastDailyChallengeDate) {
         const timeLeft = getTimeUntilReset();
         setCountdown(formatTime(timeLeft));
       }
@@ -50,11 +50,9 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Title */}
-      <Text style={styles.title}>Memory Master Fatima Edition</Text>
+      <Text style={styles.title}>Memory Master</Text>
       <Text style={styles.subtitle}>Test your mind, one level at a time.</Text>
 
-      {/* Levels Grid (3 per row) */}
       <ScrollView contentContainerStyle={styles.gridContainer}>
         {Array.from({ length: 100 }, (_, i) => i + 1).map((levelNum) => {
           const isUnlocked = levelNum <= highestUnlockedLevel;
@@ -89,7 +87,6 @@ const HomeScreen = () => {
       </ScrollView>
 
       <View style={styles.dailyButtonContainer}>
-        {/* Daily Challenge Button */}
         <TouchableOpacity
           style={[
             styles.dailyButton,
@@ -104,7 +101,6 @@ const HomeScreen = () => {
               : '🎯 Daily Challenge'}
           </Text>
         </TouchableOpacity>
-        {/* Daily Challenge Button */}
       </View>
     </View>
   );
@@ -113,7 +109,7 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f9', // Soft light gray-blue
+    backgroundColor: '#f4f6f9',
     padding: 20,
     paddingTop: 50,
   },
@@ -140,30 +136,25 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   levelButton: {
-    width: '30%', // 3 per row with gap
+    width: '30%',
     height: 40,
-    aspectRatio: 1, // Perfect square
+    aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 16,
     backgroundColor: '#ffffff',
     shadowColor: '#000',
-    color: '#616161ff',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
-    elevation: 6, // Android shadow
+    elevation: 6,
     borderWidth: 2,
     borderColor: '#e0e7ff',
     position: 'relative',
   },
-  unlockedButton: {
-    backgroundColor: '#ffffff',
-  },
   completedButton: {
     borderColor: '#23ed00ff',
     backgroundColor: '#f8fdff',
-
   },
   currentButton: {
     borderColor: '#5c9cff',
@@ -181,8 +172,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#656d7aff',
-    textAlign: 'center'
-
+    textAlign: 'center',
   },
   lockLabel: {
     fontSize: 10,

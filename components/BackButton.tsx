@@ -1,17 +1,23 @@
-import { Ionicons } from '@expo/vector-icons'; // Optional: install @expo/vector-icons
+import { useSound } from '@/hooks/useSound';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
-const BackButton = () => {
+const BackButton = React.memo(() => {
+    const { stopSound } = useSound();
     const router = useRouter();
+    const goHome = useCallback(() => {
+        stopSound('countdown'); // Stop the countdown audio immediately
+        router.push('/');
+    }, [router, stopSound]);
 
     return (
-        <TouchableOpacity style={styles.container} onPress={() => router.push('/')}>
+        <TouchableOpacity style={styles.container} onPress={goHome}>
             <Ionicons name="arrow-back" size={28} color="#007AFF" />
         </TouchableOpacity>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {

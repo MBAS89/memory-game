@@ -1,7 +1,7 @@
 import BackButton from '@/components/BackButton';
 import { useSound } from '@/hooks/useSound';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -18,102 +18,97 @@ import { generateSequence } from '../../utils/generateSequence';
 import { shuffleArray } from '../../utils/shuffleArray';
 
 const LevelScreen = () => {
-    const { playSound } = useSound();
+    const { playSound, stopSound } = useSound();
     const { number } = useLocalSearchParams<{ number: string }>();
-    const level = parseInt(number, 10);
+    const level = Number(number || 1);
     const router = useRouter();
 
-    const [highestUnlockedLevel, setHighestUnlockedLevel] = usePersistedState<number>('highestUnlockedLevel', 1);
-    const [sequence, setSequence] = useState<string[]>([]);
-    const [shuffledSymbols, setShuffledSymbols] = useState<string[]>([]);
-    const [userSequence, setUserSequence] = useState<string[]>([]);
+    const [highestUnlockedLevel, setHighestUnlockedLevel, loadingPersist] =
+        usePersistedState<number>('highestUnlockedLevel', 1);
+
     const [phase, setPhase] = useState<'countdown' | 'show' | 'input'>('countdown');
-    const [loading, setLoading] = useState(true);
 
-    // Generate sequence
-    useEffect(() => {
-        const seq = generateSequence(level);
-        setSequence(seq);
-        setShuffledSymbols(shuffleArray(seq));
-        setLoading(false);
-    }, [level]);
+    // Generate sequence once per level
+    const sequence = useMemo(() => generateSequence(level), [level]);
+    const shuffledSymbols = useMemo(() => shuffleArray(sequence), [sequence]);
 
-    // Calculate display time: decreases with level, minimum 500ms
+    const [userSequence, setUserSequence] = useState<string[]>([]);
+
     const displayTime = Math.max(4000 - level * 30, 500);
 
-    // Phase 1: Countdown
-    const handleStart = () => {
+    const handleStart = useCallback(() => {
         setPhase('show');
-        setTimeout(() => {
-            setPhase('input');
-        }, displayTime);
-    };
+        const id = setTimeout(() => setPhase('input'), displayTime);
+        return () => clearTimeout(id);
+    }, [displayTime]);
 
-    // Phase 2: Input
-    const handleSymbolPress = (symbol: string) => {
-        if (userSequence.length < sequence.length) {
-            playSound('tap');
-            setUserSequence([...userSequence, symbol]);
-        }
-    };
+    const handleSymbolPress = useCallback(
+        (symbol: string) => {
+            if (userSequence.length < sequence.length) {
+                playSound('tap');
+                setUserSequence((s) => (s.includes(symbol) ? s : [...s, symbol]));
+            }
+        },
+        [playSound, sequence.length, userSequence.length]
+    );
 
-    const handleReset = () => {
-        setUserSequence([]);
-    };
+    const handleReset = useCallback(() => setUserSequence([]), []);
 
-    const handleSubmit = () => {
+    const handleSubmit = useCallback(() => {
         if (userSequence.length !== sequence.length) return;
 
-        if (userSequence.every((s, i) => s === sequence[i])) {
-            // ✅ Success: Offer "Next Level" or "Back to Menu"
+        const success = userSequence.every((s, i) => s === sequence[i]);
+        if (success) {
             const nextLevel = level + 1;
-            const isLastLevel = nextLevel > 100;
-            playSound('success')
+            const isLastLevel = nextLevel > 100; // ✅ Hard limit at 100
+            playSound('success');
             Alert.alert(
                 '🎉 Success!',
                 `Level ${level} completed!`,
                 [
                     {
                         text: 'Back to Menu',
-                        onPress: () => router.push('/'),
+                        onPress: () => {
+                            if (level === highestUnlockedLevel) {
+                                setHighestUnlockedLevel(Math.min(nextLevel, 100)); // ✅ stay max 100
+                            }
+                            stopSound('success')
+                            router.replace('/')
+                        },
                     },
                     !isLastLevel
                         ? {
                             text: 'Next Level',
                             onPress: () => {
                                 if (level === highestUnlockedLevel) {
-                                    setHighestUnlockedLevel(Math.min(nextLevel, 100));
+                                    setHighestUnlockedLevel(Math.min(nextLevel, 100)); // ✅ stay max 100
                                 }
-                                router.push(`/level/${nextLevel}`);
+                                stopSound('success')
+                                router.replace(`/level/${nextLevel}`);
                             },
                             style: 'default',
                         }
                         : null,
-                ].filter(Boolean) as any
-            );
+                ].filter(Boolean) as any)
         } else {
-            playSound('failure')
-            // ❌ Failure: Retry or Give Up
-            Alert.alert(
-                '❌ Try Again Fatima',
-                'Incorrect sequence. Want to give it another shot?',
-                [
-                    {
-                        text: 'Give Up',
-                        style: 'cancel',
-                        onPress: () => router.push('/'),
-                    },
-                    {
-                        text: 'Retry',
-                        style: 'default',
-                        onPress: handleReset,
-                    },
-                ]
-            );
+            playSound('failure');
+            Alert.alert('❌ Try Again', 'Incorrect sequence. Want to give it another shot?', [
+                { text: 'Give Up', style: 'cancel', onPress: () => { stopSound('failure'); router.push('/') } },
+                { text: 'Retry', style: 'default', onPress: handleReset },
+            ]);
         }
-    };
+    }, [
+        handleReset,
+        highestUnlockedLevel,
+        level,
+        playSound,
+        router,
+        sequence,
+        setHighestUnlockedLevel,
+        userSequence,
+    ]);
 
-    if (loading) {
+    if (loadingPersist) {
         return (
             <View style={styles.center}>
                 <ActivityIndicator size="large" color="#007AFF" />
@@ -132,7 +127,7 @@ const LevelScreen = () => {
             {phase === 'show' && (
                 <GridContainer>
                     {sequence.map((symbol, i) => (
-                        <SymbolButton key={i} symbol={symbol} onPress={() => { }} disabled />
+                        <SymbolButton key={`${symbol}-${i}`} symbol={symbol} onPress={() => { }} disabled />
                     ))}
                 </GridContainer>
             )}
@@ -143,7 +138,7 @@ const LevelScreen = () => {
                     <GridContainer>
                         {shuffledSymbols.map((symbol, i) => (
                             <SymbolButton
-                                key={i}
+                                key={`${symbol}-${i}`}
                                 symbol={symbol}
                                 onPress={() => handleSymbolPress(symbol)}
                                 disabled={userSequence.includes(symbol)}
@@ -153,12 +148,12 @@ const LevelScreen = () => {
 
                     <View style={styles.userSequence}>
                         {userSequence.map((s, i) => (
-                            <Text key={i} style={styles.userSymbol}>
+                            <Text key={`${s}-${i}`} style={styles.userSymbol}>
                                 {s}
                             </Text>
                         ))}
                         {Array.from({ length: sequence.length - userSequence.length }).map((_, i) => (
-                            <Text key={i + userSequence.length} style={styles.placeholder}>
+                            <Text key={`ph-${i}`} style={styles.placeholder}>
                                 ?
                             </Text>
                         ))}
@@ -183,80 +178,21 @@ const LevelScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        paddingTop: 40,
-        backgroundColor: '#fff',
-        padding: 20,
-        alignItems: 'center',
-    },
-    center: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    header: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        marginVertical: 10,
-        color: '#333',
-    },
-    subheader: {
-        fontSize: 18,
-        color: '#666',
-        marginBottom: 30,
-    },
-    inputSection: {
-        marginTop: 20,
-        alignItems: 'center',
-    },
-    label: {
-        fontSize: 16,
-        color: '#555',
-        marginBottom: 10,
-    },
-    userSequence: {
-        flexDirection: 'row',
-        marginVertical: 20,
-        gap: 10,
-    },
-    userSymbol: {
-        fontSize: 32,
-        marginHorizontal: 8,
-    },
-    placeholder: {
-        fontSize: 32,
-        color: '#ccc',
-        marginHorizontal: 8,
-    },
-    buttonRow: {
-        flexDirection: 'row',
-        gap: 20,
-        marginTop: 20,
-    },
-    resetButton: {
-        backgroundColor: '#FF3B30',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 8,
-    },
-    resetText: {
-        color: '#fff',
-        fontWeight: '600',
-    },
-    submitButton: {
-        backgroundColor: '#34C759',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 8,
-    },
-    disabledButton: {
-        backgroundColor: '#999',
-    },
-    submitText: {
-        color: '#fff',
-        fontWeight: '600',
-    },
+    container: { flex: 1, paddingTop: 40, backgroundColor: '#fff', padding: 20, alignItems: 'center' },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    header: { fontSize: 28, fontWeight: 'bold', marginVertical: 10, color: '#333' },
+    subheader: { fontSize: 18, color: '#666', marginBottom: 30 },
+    inputSection: { marginTop: 20, alignItems: 'center' },
+    label: { fontSize: 16, color: '#555', marginBottom: 10 },
+    userSequence: { flexDirection: 'row', marginVertical: 20, gap: 10, flexWrap: 'wrap', justifyContent: 'center' },
+    userSymbol: { fontSize: 32, marginHorizontal: 8 },
+    placeholder: { fontSize: 32, color: '#ccc', marginHorizontal: 8 },
+    buttonRow: { flexDirection: 'row', gap: 20, marginTop: 20 },
+    resetButton: { backgroundColor: '#FF3B30', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
+    resetText: { color: '#fff', fontWeight: '600' },
+    submitButton: { backgroundColor: '#34C759', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
+    disabledButton: { backgroundColor: '#999' },
+    submitText: { color: '#fff', fontWeight: '600' },
 });
 
 export default LevelScreen;

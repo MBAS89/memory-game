@@ -1,10 +1,14 @@
-import { shuffleArray } from "./shuffleArray";
+import { shuffleArray } from './shuffleArray';
 
-// List of fun, distinct emojis
-const SYMBOLS = ['🍎', '🌸', '🚀', '🐞', '🔥', '🎨', '🍄', '🌋', '💸', '🌞', '🎪', '🧩', '🦄', '🍕', '🐧', '🧁', '🌮', '🥑', '🤖', '🐱'];
+// Keep it small and distinct
+const SYMBOLS = [
+  '🍎', '🌸', '🚀', '🐞', '🔥', '🎨', '🍄', '🌋', '💸', '🌞',
+  '🎪', '🧩', '🦄', '🍕', '🐧', '🧁', '🌮', '🥑', '🤖', '🐱',
+];
 
 export const generateSequence = (level: number): string[] => {
-    const sequenceLength = 3 + Math.floor(level / 10); // Grows slowly
-    const shuffled = shuffleArray(SYMBOLS);
-    return shuffled.slice(0, sequenceLength); // Unique symbols
+  // Grows slowly; clamp to symbol count
+  const sequenceLength = Math.min(3 + Math.floor(level / 10), SYMBOLS.length);
+  const shuffled = shuffleArray(SYMBOLS);
+  return shuffled.slice(0, sequenceLength);
 };

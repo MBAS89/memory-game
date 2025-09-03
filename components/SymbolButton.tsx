@@ -14,11 +14,7 @@ const SymbolButton: React.FC<SymbolButtonProps> = ({ symbol, onPress, disabled, 
         <TouchableOpacity
             onPress={onPress}
             disabled={disabled}
-            style={[
-                styles.container,
-                selected && styles.selected,
-                disabled && styles.disabled,
-            ]}
+            style={[styles.container, selected && styles.selected, disabled && styles.disabled]}
         >
             <Animated.Text style={styles.symbol}>{symbol}</Animated.Text>
         </TouchableOpacity>
@@ -38,20 +34,13 @@ const styles = StyleSheet.create({
         borderColor: '#ddd',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
+        elevation: 2,
     },
-    selected: {
-        borderColor: '#007AFF',
-        backgroundColor: '#E5F1FF',
-    },
-    disabled: {
-        opacity: 0.5,
-    },
-    symbol: {
-        fontSize: 28,
-    },
+    selected: { borderColor: '#007AFF', backgroundColor: '#E5F1FF' },
+    disabled: { opacity: 0.5 },
+    symbol: { fontSize: 28 },
 });
 
-export default SymbolButton;
+export default React.memo(SymbolButton);

@@ -1,7 +1,7 @@
 import BackButton from '@/components/BackButton';
 import { useSound } from '@/hooks/useSound';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -16,93 +16,72 @@ import SymbolButton from '../components/SymbolButton';
 import { usePersistedState } from '../hooks/usePersistedState';
 import { generateSequence } from '../utils/generateSequence';
 import { shuffleArray } from '../utils/shuffleArray';
-import { getTodayString } from '../utils/timeUtils';
+import { getTodayString, isToday } from '../utils/timeUtils';
 
 const DailyChallengeScreen = () => {
     const { playSound } = useSound();
     const router = useRouter();
-    const [lastDailyChallengeDate, setLastDailyChallengeDate] = usePersistedState<string | null>('lastDailyChallengeDate', null);
-    const [sequence, setSequence] = useState<string[]>([]);
-    const [shuffledSymbols, setShuffledSymbols] = useState<string[]>([]);
-    const [userSequence, setUserSequence] = useState<string[]>([]);
-    const [phase, setPhase] = useState<'countdown' | 'show' | 'input'>('countdown');
-    const [loading, setLoading] = useState(true);
 
-    // Prevent replay if already completed today
+    const [lastDailyChallengeDate, setLastDailyChallengeDate, loadingPersist] =
+        usePersistedState<string | null>('lastDailyChallengeDate', null);
+
+    const [phase, setPhase] = useState<'countdown' | 'show' | 'input'>('countdown');
+
+    // Simulate ~level 20 difficulty – memoized to avoid recalculation
+    const sequence = useMemo(() => generateSequence(20), []);
+    const shuffledSymbols = useMemo(() => shuffleArray(sequence), [sequence]);
+
+    const [userSequence, setUserSequence] = useState<string[]>([]);
+
+    // If already completed today, bounce immediately (no new Date allocations every render)
     useEffect(() => {
-        if (lastDailyChallengeDate && new Date(lastDailyChallengeDate) >= new Date(getTodayString())) {
+        if (!loadingPersist && lastDailyChallengeDate && isToday(lastDailyChallengeDate)) {
             Alert.alert('Already Completed', 'You can only play the daily challenge once per day.', [
                 { text: 'Back', onPress: () => router.back() },
             ]);
-            return;
         }
+    }, [lastDailyChallengeDate, loadingPersist, router]);
 
-        // Simulate level ~20 difficulty
-        const seq = generateSequence(20);
-        setSequence(seq);
-        setShuffledSymbols(shuffleArray(seq));
-        setLoading(false);
-    }, [lastDailyChallengeDate, router]);
+    const displayTime = 1600; // from your original calc
 
-    const displayTime = Math.max(4000 - 80 * 30, 500); // ~1600ms
-
-    const handleStart = () => {
+    const handleStart = useCallback(() => {
         setPhase('show');
-        setTimeout(() => {
-            setPhase('input');
-        }, displayTime);
-    };
+        const id = setTimeout(() => setPhase('input'), displayTime);
+        return () => clearTimeout(id);
+    }, [displayTime]);
 
-    const handleSymbolPress = (symbol: string) => {
-        if (userSequence.length < sequence.length) {
-            playSound('tap')
-            setUserSequence([...userSequence, symbol]);
-        }
-    };
+    const handleSymbolPress = useCallback(
+        (symbol: string) => {
+            if (userSequence.length < sequence.length) {
+                playSound('tap');
+                setUserSequence((s) => (s.includes(symbol) ? s : [...s, symbol]));
+            }
+        },
+        [playSound, sequence.length, userSequence.length]
+    );
 
-    const handleReset = () => {
-        setUserSequence([]);
-    };
+    const handleReset = useCallback(() => setUserSequence([]), []);
 
-    const handleSubmit = async () => {
+    const handleSubmit = useCallback(async () => {
         if (userSequence.length !== sequence.length) return;
 
-        // ... inside handleSubmit
-        if (userSequence.every((s, i) => s === sequence[i])) {
+        const correct = userSequence.every((s, i) => s === sequence[i]);
+        if (correct) {
             await setLastDailyChallengeDate(getTodayString());
-            playSound('success')
-            Alert.alert(
-                '🎉 Challenge Complete!',
-                'Great job! Come back tomorrow for a new challenge.',
-                [
-                    {
-                        text: 'Back to Menu',
-                        onPress: () => router.push('/'),
-                    },
-                ]
-            );
+            playSound('success');
+            Alert.alert('🎉 Challenge Complete!', 'Great job! Come back tomorrow for a new challenge.', [
+                { text: 'Back to Menu', onPress: () => router.push('/') },
+            ]);
         } else {
-            playSound('failure')
-            Alert.alert(
-                '❌ Try Again',
-                'Incorrect sequence. Want to give it another shot?',
-                [
-                    {
-                        text: 'Give Up',
-                        style: 'cancel',
-                        onPress: () => router.push('/'),
-                    },
-                    {
-                        text: 'Retry',
-                        style: 'default',
-                        onPress: handleReset,
-                    },
-                ]
-            );
+            playSound('failure');
+            Alert.alert('❌ Try Again', 'Incorrect sequence. Want to give it another shot?', [
+                { text: 'Give Up', style: 'cancel', onPress: () => router.push('/') },
+                { text: 'Retry', style: 'default', onPress: handleReset },
+            ]);
         }
-    };
+    }, [handleReset, playSound, router, sequence, setLastDailyChallengeDate, userSequence]);
 
-    if (loading) {
+    if (loadingPersist) {
         return (
             <View style={styles.center}>
                 <ActivityIndicator size="large" color="#FF9500" />
@@ -121,7 +100,7 @@ const DailyChallengeScreen = () => {
             {phase === 'show' && (
                 <GridContainer>
                     {sequence.map((symbol, i) => (
-                        <SymbolButton key={i} symbol={symbol} onPress={() => { }} disabled />
+                        <SymbolButton key={`${symbol}-${i}`} symbol={symbol} onPress={() => { }} disabled />
                     ))}
                 </GridContainer>
             )}
@@ -132,7 +111,7 @@ const DailyChallengeScreen = () => {
                     <GridContainer>
                         {shuffledSymbols.map((symbol, i) => (
                             <SymbolButton
-                                key={i}
+                                key={`${symbol}-${i}`}
                                 symbol={symbol}
                                 onPress={() => handleSymbolPress(symbol)}
                                 disabled={userSequence.includes(symbol)}
@@ -142,12 +121,12 @@ const DailyChallengeScreen = () => {
 
                     <View style={styles.userSequence}>
                         {userSequence.map((s, i) => (
-                            <Text key={i} style={styles.userSymbol}>
+                            <Text key={`${s}-${i}`} style={styles.userSymbol}>
                                 {s}
                             </Text>
                         ))}
                         {Array.from({ length: sequence.length - userSequence.length }).map((_, i) => (
-                            <Text key={i + userSequence.length} style={styles.placeholder}>
+                            <Text key={`ph-${i}`} style={styles.placeholder}>
                                 ?
                             </Text>
                         ))}
@@ -179,11 +158,7 @@ const styles = StyleSheet.create({
         padding: 20,
         alignItems: 'center',
     },
-    center: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     header: {
         fontSize: 28,
         fontWeight: 'bold',
@@ -195,15 +170,8 @@ const styles = StyleSheet.create({
         color: '#A16207',
         marginBottom: 30,
     },
-    inputSection: {
-        marginTop: 20,
-        alignItems: 'center',
-    },
-    label: {
-        fontSize: 16,
-        color: '#7C5D06',
-        marginBottom: 10,
-    },
+    inputSection: { marginTop: 20, alignItems: 'center' },
+    label: { fontSize: 16, color: '#7C5D06', marginBottom: 10 },
     userSequence: {
         flexDirection: 'row',
         marginVertical: 20,
@@ -211,43 +179,24 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 10,
     },
-    userSymbol: {
-        fontSize: 32,
-        marginHorizontal: 8,
-    },
-    placeholder: {
-        fontSize: 32,
-        color: '#ccc',
-        marginHorizontal: 8,
-    },
-    buttonRow: {
-        flexDirection: 'row',
-        gap: 20,
-        marginTop: 20,
-    },
+    userSymbol: { fontSize: 32, marginHorizontal: 8 },
+    placeholder: { fontSize: 32, color: '#ccc', marginHorizontal: 8 },
+    buttonRow: { flexDirection: 'row', gap: 20, marginTop: 20 },
     resetButton: {
         backgroundColor: '#FF3B30',
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
     },
-    resetText: {
-        color: '#fff',
-        fontWeight: '600',
-    },
+    resetText: { color: '#fff', fontWeight: '600' },
     submitButton: {
         backgroundColor: '#FF9500',
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
     },
-    disabledButton: {
-        backgroundColor: '#CD853F',
-    },
-    submitText: {
-        color: '#fff',
-        fontWeight: '600',
-    },
+    disabledButton: { backgroundColor: '#CD853F' },
+    submitText: { color: '#fff', fontWeight: '600' },
 });
 
 export default DailyChallengeScreen;

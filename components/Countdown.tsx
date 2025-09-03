@@ -1,12 +1,7 @@
 import { useSound } from '@/hooks/useSound';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring
-} from 'react-native-reanimated';
-
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 interface CountdownProps {
     duration?: number;
@@ -14,52 +9,59 @@ interface CountdownProps {
 }
 
 const Countdown: React.FC<CountdownProps> = ({ duration = 3, onComplete }) => {
-    const { playSound } = useSound();
-    const [timeLeft, setTimeLeft] = useState(duration);
+    const { playSound, stopSound } = useSound();
+    const [count, setCount] = useState(duration);
     const scale = useSharedValue(1);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const hasPlayedSound = useRef(false); // Prevent sound from playing more than once
 
-    const animatedStyle = useAnimatedStyle(() => {
-        return {
-            transform: [{ scale: scale.value }],
-        };
-    });
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }],
+    }));
 
-    // In Countdown.tsx – update handleStart or useEffect
+    // Only run ONCE when countdown starts
     useEffect(() => {
-        if (timeLeft > 0) {
-            // ✅ Delay sound & animation slightly so number renders first
-            const trigger = setTimeout(() => {
-                scale.value = withSpring(1.2, {}, () => {
-                    scale.value = withSpring(1);
-                });
-                playSound('countdown'); // 🔊 Play after animation starts
-            }, 100); // Small delay to let UI render
+        if (hasPlayedSound.current) return;
 
-            // Schedule next tick
-            const next = setTimeout(() => {
-                setTimeLeft(timeLeft - 1);
-            }, 800);
+        playSound('countdown');
+        hasPlayedSound.current = true;
 
-            return () => {
-                clearTimeout(trigger);
-                clearTimeout(next);
-            };
-        } else {
-            onComplete();
-        }
-    }, [timeLeft, onComplete, playSound, scale]);
+        // ❌ Remove stopSound from here for now
+        // We don't want to stop it prematurely
+    }, [playSound]);
 
-    if (timeLeft === 0) {
-        return (
-            <Animated.View style={[styles.container, animatedStyle]}>
-                <Text style={styles.text}>Go!</Text>
-            </Animated.View>
-        );
-    }
+    // Handle countdown logic without playing sound every tick
+    useEffect(() => {
+        if (count <= 0) return;
+
+        // Animate scale
+        scale.value = withTiming(1.2, { duration: 100 }, () => {
+            scale.value = withTiming(1, { duration: 100 });
+        });
+
+        // Schedule next tick
+        timerRef.current = setTimeout(() => {
+            if (count > 1) {
+                setCount(count - 1);
+            } else {
+                // Final step: show "Go!" and call onComplete
+                setCount(0);
+                setTimeout(() => onComplete(), 500); // Small delay to show "Go!"
+            }
+        }, 1000);
+
+        return () => {
+            if (timerRef.current) {
+                clearTimeout(timerRef.current);
+            }
+        };
+    }, [count, onComplete, scale]);
 
     return (
         <Animated.View style={[styles.container, animatedStyle]}>
-            <Text style={styles.text}>{timeLeft}</Text>
+            <Text style={styles.text}>
+                {count === 0 ? 'Go!' : count}
+            </Text>
         </Animated.View>
     );
 };
