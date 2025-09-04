@@ -1,5 +1,7 @@
 import BackButton from '@/components/BackButton';
+import { useProfile } from '@/hooks/useProfile';
 import { useSound } from '@/hooks/useSound';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -17,8 +19,11 @@ import { usePersistedState } from '../../hooks/usePersistedState';
 import { generateSequence } from '../../utils/generateSequence';
 import { shuffleArray } from '../../utils/shuffleArray';
 
+import StatusBarComponent from '@/components/StatusBar';
+
 const LevelScreen = () => {
     const { playSound, stopSound } = useSound();
+    const { profile, updateProfile } = useProfile();
     const { number } = useLocalSearchParams<{ number: string }>();
     const level = Number(number || 1);
     const router = useRouter();
@@ -60,7 +65,13 @@ const LevelScreen = () => {
         const success = userSequence.every((s, i) => s === sequence[i]);
         if (success) {
             const nextLevel = level + 1;
-            const isLastLevel = nextLevel > 100; // ✅ Hard limit at 100
+            const isLastLevel = nextLevel > 100;
+            const earnedXP = Math.floor(10 * Math.pow(1.1, level - 1));
+            updateProfile({
+                xp: profile.xp + earnedXP,
+                coins: profile.coins + 5,
+                totalLevelsCompleted: profile.totalLevelsCompleted + 1,
+            });
             playSound('success');
             Alert.alert(
                 '🎉 Success!',
@@ -92,10 +103,22 @@ const LevelScreen = () => {
                 ].filter(Boolean) as any)
         } else {
             playSound('failure');
-            Alert.alert('❌ Try Again', 'Incorrect sequence. Want to give it another shot?', [
-                { text: 'Give Up', style: 'cancel', onPress: () => { stopSound('failure'); router.push('/') } },
-                { text: 'Retry', style: 'default', onPress: handleReset },
-            ]);
+            if (profile.hearts > 0) {
+                updateProfile({ hearts: profile.hearts - 1 });
+                Alert.alert('❌ Try Again', 'Incorrect sequence. Want to give it another shot?', [
+                    { text: 'Give Up', style: 'cancel', onPress: () => { stopSound('failure'); router.push('/') } },
+                    { text: 'Retry', style: 'default', onPress: handleReset },
+                ]);
+            } else {
+                Alert.alert(
+                    'Out of Hearts!',
+                    'Buy more in the shop or wait for tomorrow.',
+                    [
+                        { text: 'Later', style: 'cancel' },
+                        { text: 'Go to Shop', onPress: () => router.push('/shop') }
+                    ]
+                );
+            }
         }
     }, [
         handleReset,
@@ -110,89 +133,195 @@ const LevelScreen = () => {
 
     if (loadingPersist) {
         return (
-            <View style={styles.center}>
-                <ActivityIndicator size="large" color="#007AFF" />
-            </View>
+            <LinearGradient colors={['#1d2b53', '#1a1a2e', '#16213e']} style={styles.gradient}>
+                <View style={styles.center}>
+                    <ActivityIndicator size="large" color="#5c9cff" />
+                </View>
+            </LinearGradient>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <BackButton />
-            <Text style={styles.header}>Level {level}</Text>
-            <Text style={styles.subheader}>Remember the order!</Text>
+        <LinearGradient colors={['#1d2b53', '#1a1a2e', '#16213e']} style={styles.gradient}>
+            <View style={styles.container}>
+                <BackButton />
+                <StatusBarComponent />
 
-            {phase === 'countdown' && <Countdown onComplete={handleStart} />}
+                <Text style={styles.header}>Level {level}</Text>
+                <Text style={styles.subheader}>Remember the order!</Text>
 
-            {phase === 'show' && (
-                <GridContainer>
-                    {sequence.map((symbol, i) => (
-                        <SymbolButton key={`${symbol}-${i}`} symbol={symbol} onPress={() => { }} disabled />
-                    ))}
-                </GridContainer>
-            )}
+                {phase === 'countdown' && <Countdown onComplete={handleStart} />}
 
-            {phase === 'input' && (
-                <View style={styles.inputSection}>
-                    <Text style={styles.label}>Tap symbols in order:</Text>
+                {phase === 'show' && (
                     <GridContainer>
-                        {shuffledSymbols.map((symbol, i) => (
-                            <SymbolButton
-                                key={`${symbol}-${i}`}
-                                symbol={symbol}
-                                onPress={() => handleSymbolPress(symbol)}
-                                disabled={userSequence.includes(symbol)}
-                            />
+                        {sequence.map((symbol, i) => (
+                            <SymbolButton key={`${symbol}-${i}`} symbol={symbol} onPress={() => { }} disabled />
                         ))}
                     </GridContainer>
+                )}
 
-                    <View style={styles.userSequence}>
-                        {userSequence.map((s, i) => (
-                            <Text key={`${s}-${i}`} style={styles.userSymbol}>
-                                {s}
-                            </Text>
-                        ))}
-                        {Array.from({ length: sequence.length - userSequence.length }).map((_, i) => (
-                            <Text key={`ph-${i}`} style={styles.placeholder}>
-                                ?
-                            </Text>
-                        ))}
-                    </View>
+                {phase === 'input' && (
+                    <View style={styles.inputSection}>
+                        <Text style={styles.label}>Tap symbols in order:</Text>
 
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-                            <Text style={styles.resetText}>Reset</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.submitButton, userSequence.length !== sequence.length && styles.disabledButton]}
-                            onPress={handleSubmit}
-                            disabled={userSequence.length !== sequence.length}
-                        >
-                            <Text style={styles.submitText}>Submit</Text>
-                        </TouchableOpacity>
+                        <GridContainer>
+                            {shuffledSymbols.map((symbol, i) => (
+                                <SymbolButton
+                                    key={`${symbol}-${i}`}
+                                    symbol={symbol}
+                                    onPress={() => handleSymbolPress(symbol)}
+                                    disabled={userSequence.includes(symbol)}
+                                />
+                            ))}
+                        </GridContainer>
+
+                        {/* User Input Preview */}
+                        <View style={styles.userSequence}>
+                            {userSequence.map((s, i) => (
+                                <Text key={`${s}-${i}`} style={styles.userSymbol}>
+                                    {s}
+                                </Text>
+                            ))}
+                            {Array.from({ length: sequence.length - userSequence.length }).map((_, i) => (
+                                <Text key={`ph-${i}`} style={styles.placeholder}>
+                                    ?
+                                </Text>
+                            ))}
+                        </View>
+
+                        {/* Action Buttons */}
+                        <View style={styles.buttonRow}>
+                            <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+                                <Text style={styles.resetText}>🔄 Reset</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.submitButton,
+                                    userSequence.length !== sequence.length && styles.disabledButton,
+                                ]}
+                                onPress={handleSubmit}
+                                disabled={userSequence.length !== sequence.length}
+                            >
+                                <Text style={styles.submitText}>✅ Submit</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
-            )}
-        </View>
+                )}
+            </View>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, paddingTop: 40, backgroundColor: '#fff', padding: 20, alignItems: 'center' },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { fontSize: 28, fontWeight: 'bold', marginVertical: 10, color: '#333' },
-    subheader: { fontSize: 18, color: '#666', marginBottom: 30 },
-    inputSection: { marginTop: 20, alignItems: 'center' },
-    label: { fontSize: 16, color: '#555', marginBottom: 10 },
-    userSequence: { flexDirection: 'row', marginVertical: 20, gap: 10, flexWrap: 'wrap', justifyContent: 'center' },
-    userSymbol: { fontSize: 32, marginHorizontal: 8 },
-    placeholder: { fontSize: 32, color: '#ccc', marginHorizontal: 8 },
-    buttonRow: { flexDirection: 'row', gap: 20, marginTop: 20 },
-    resetButton: { backgroundColor: '#FF3B30', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-    resetText: { color: '#fff', fontWeight: '600' },
-    submitButton: { backgroundColor: '#34C759', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-    disabledButton: { backgroundColor: '#999' },
-    submitText: { color: '#fff', fontWeight: '600' },
+    gradient: {
+        flex: 1,
+    },
+    container: {
+        flex: 1,
+        paddingTop: 80,
+        paddingHorizontal: 20,
+        alignItems: 'center',
+    },
+    center: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    header: {
+        fontSize: 36,
+        fontWeight: '800',
+        color: '#ffffff',
+        marginBottom: 8,
+        letterSpacing: 1.2,
+        textShadowColor: 'rgba(0, 0, 0, 0.4)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 6,
+    },
+    subheader: {
+        fontSize: 18,
+        color: '#e0e7ff',
+        marginBottom: 30,
+        fontWeight: '500',
+        opacity: 0.9,
+    },
+    inputSection: {
+        width: '100%',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    label: {
+        fontSize: 16,
+        color: '#d1d5db',
+        marginBottom: 12,
+        fontWeight: '600',
+    },
+    userSequence: {
+        flexDirection: 'row',
+        marginVertical: 20,
+        gap: 12,
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+    },
+    userSymbol: {
+        fontSize: 36,
+        color: '#ffffff',
+        fontWeight: 'bold',
+        minWidth: 40,
+        textAlign: 'center',
+        textShadowColor: '#000',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
+    },
+    placeholder: {
+        fontSize: 36,
+        color: '#6b7280',
+        minWidth: 40,
+        textAlign: 'center',
+    },
+    buttonRow: {
+        flexDirection: 'row',
+        gap: 20,
+        marginTop: 20,
+        width: '100%',
+        justifyContent: 'center',
+    },
+    resetButton: {
+        backgroundColor: '#EF4444',
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        borderRadius: 16,
+        shadowColor: '#EF4444',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 6,
+    },
+    resetText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    submitButton: {
+        backgroundColor: '#10B981',
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        borderRadius: 16,
+        shadowColor: '#10B981',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 6,
+    },
+    disabledButton: {
+        backgroundColor: '#6B7280',
+        shadowOpacity: 0.1,
+        elevation: 2,
+    },
+    submitText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
 });
 
 export default LevelScreen;

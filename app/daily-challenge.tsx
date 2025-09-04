@@ -1,5 +1,8 @@
 import BackButton from '@/components/BackButton';
+import StatusBarComponent from '@/components/StatusBar';
+import { useProfile } from '@/hooks/useProfile';
 import { useSound } from '@/hooks/useSound';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -20,6 +23,7 @@ import { getTodayString, isToday } from '../utils/timeUtils';
 
 const DailyChallengeScreen = () => {
     const { playSound } = useSound();
+    const { profile, updateProfile } = useProfile();
     const router = useRouter();
 
     const [lastDailyChallengeDate, setLastDailyChallengeDate, loadingPersist] =
@@ -27,22 +31,24 @@ const DailyChallengeScreen = () => {
 
     const [phase, setPhase] = useState<'countdown' | 'show' | 'input'>('countdown');
 
-    // Simulate ~level 20 difficulty – memoized to avoid recalculation
+    // Fixed difficulty ~level 20
     const sequence = useMemo(() => generateSequence(20), []);
     const shuffledSymbols = useMemo(() => shuffleArray(sequence), [sequence]);
 
     const [userSequence, setUserSequence] = useState<string[]>([]);
 
-    // If already completed today, bounce immediately (no new Date allocations every render)
+    const displayTime = 1600;
+
+    // Prevent replay if already completed today
     useEffect(() => {
         if (!loadingPersist && lastDailyChallengeDate && isToday(lastDailyChallengeDate)) {
-            Alert.alert('Already Completed', 'You can only play the daily challenge once per day.', [
-                { text: 'Back', onPress: () => router.back() },
-            ]);
+            Alert.alert(
+                '🌟 Already Completed',
+                'You crushed today’s challenge! Come back tomorrow for a new one.',
+                [{ text: 'Back', onPress: () => router.back() }]
+            );
         }
     }, [lastDailyChallengeDate, loadingPersist, router]);
-
-    const displayTime = 1600; // from your original calc
 
     const handleStart = useCallback(() => {
         setPhase('show');
@@ -68,135 +74,228 @@ const DailyChallengeScreen = () => {
         const correct = userSequence.every((s, i) => s === sequence[i]);
         if (correct) {
             await setLastDailyChallengeDate(getTodayString());
+            updateProfile({
+                xp: profile.xp + 100,
+                coins: profile.coins + 50,
+                totalLevelsCompleted: profile.totalLevelsCompleted + 1,
+            });
             playSound('success');
-            Alert.alert('🎉 Challenge Complete!', 'Great job! Come back tomorrow for a new challenge.', [
-                { text: 'Back to Menu', onPress: () => router.push('/') },
-            ]);
+            Alert.alert(
+                '🎉 Challenge Complete!',
+                'You earned 100 XP and 50 coins! See you tomorrow for a new challenge.',
+                [{ text: 'Back to Menu', onPress: () => router.push('/') }]
+            );
         } else {
             playSound('failure');
-            Alert.alert('❌ Try Again', 'Incorrect sequence. Want to give it another shot?', [
-                { text: 'Give Up', style: 'cancel', onPress: () => router.push('/') },
-                { text: 'Retry', style: 'default', onPress: handleReset },
-            ]);
+            Alert.alert(
+                '❌ Try Again',
+                'Incorrect sequence. Want to give it another shot?',
+                [
+                    { text: 'Give Up', style: 'cancel', onPress: () => router.push('/') },
+                    { text: 'Retry', style: 'default', onPress: handleReset },
+                ]
+            );
         }
     }, [handleReset, playSound, router, sequence, setLastDailyChallengeDate, userSequence]);
 
     if (loadingPersist) {
         return (
-            <View style={styles.center}>
-                <ActivityIndicator size="large" color="#FF9500" />
-            </View>
+            <LinearGradient colors={['#1d2b53', '#1a1a2e', '#16213e']} style={styles.gradient}>
+                <View style={styles.center}>
+                    <ActivityIndicator size="large" color="#FFD700" />
+                </View>
+            </LinearGradient>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <BackButton />
-            <Text style={styles.header}>Daily Challenge</Text>
-            <Text style={styles.subheader}>One per day — good luck!</Text>
+        <LinearGradient
+            colors={['#1a1a2e', '#16243c', '#1d3557']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradient}
+        >
+            <View style={styles.container}>
+                <BackButton />
+                <StatusBarComponent />
 
-            {phase === 'countdown' && <Countdown onComplete={handleStart} />}
+                {/* Title */}
+                <Text style={styles.header}>🌟 Daily Challenge</Text>
+                <Text style={styles.subheader}>One per day — prove your memory!</Text>
 
-            {phase === 'show' && (
-                <GridContainer>
-                    {sequence.map((symbol, i) => (
-                        <SymbolButton key={`${symbol}-${i}`} symbol={symbol} onPress={() => { }} disabled />
-                    ))}
-                </GridContainer>
-            )}
+                {phase === 'countdown' && <Countdown onComplete={handleStart} />}
 
-            {phase === 'input' && (
-                <View style={styles.inputSection}>
-                    <Text style={styles.label}>Recreate the sequence:</Text>
+                {phase === 'show' && (
                     <GridContainer>
-                        {shuffledSymbols.map((symbol, i) => (
-                            <SymbolButton
-                                key={`${symbol}-${i}`}
-                                symbol={symbol}
-                                onPress={() => handleSymbolPress(symbol)}
-                                disabled={userSequence.includes(symbol)}
-                            />
+                        {sequence.map((symbol, i) => (
+                            <SymbolButton key={`${symbol}-${i}`} symbol={symbol} onPress={() => { }} disabled />
                         ))}
                     </GridContainer>
+                )}
 
-                    <View style={styles.userSequence}>
-                        {userSequence.map((s, i) => (
-                            <Text key={`${s}-${i}`} style={styles.userSymbol}>
-                                {s}
-                            </Text>
-                        ))}
-                        {Array.from({ length: sequence.length - userSequence.length }).map((_, i) => (
-                            <Text key={`ph-${i}`} style={styles.placeholder}>
-                                ?
-                            </Text>
-                        ))}
-                    </View>
+                {phase === 'input' && (
+                    <View style={styles.inputSection}>
+                        <Text style={styles.label}>Recreate the sequence:</Text>
 
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-                            <Text style={styles.resetText}>Reset</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.submitButton, userSequence.length !== sequence.length && styles.disabledButton]}
-                            onPress={handleSubmit}
-                            disabled={userSequence.length !== sequence.length}
-                        >
-                            <Text style={styles.submitText}>Submit</Text>
-                        </TouchableOpacity>
+                        <GridContainer>
+                            {shuffledSymbols.map((symbol, i) => (
+                                <SymbolButton
+                                    key={`${symbol}-${i}`}
+                                    symbol={symbol}
+                                    onPress={() => handleSymbolPress(symbol)}
+                                    disabled={userSequence.includes(symbol)}
+                                />
+                            ))}
+                        </GridContainer>
+
+                        {/* User Input Preview */}
+                        <View style={styles.userSequence}>
+                            {userSequence.map((s, i) => (
+                                <Text key={`${s}-${i}`} style={styles.userSymbol}>
+                                    {s}
+                                </Text>
+                            ))}
+                            {Array.from({ length: sequence.length - userSequence.length }).map((_, i) => (
+                                <Text key={`ph-${i}`} style={styles.placeholder}>
+                                    ?
+                                </Text>
+                            ))}
+                        </View>
+
+                        {/* Action Buttons */}
+                        <View style={styles.buttonRow}>
+                            <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+                                <Text style={styles.resetText}>🔄 Reset</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.submitButton,
+                                    userSequence.length !== sequence.length && styles.disabledButton,
+                                ]}
+                                onPress={handleSubmit}
+                                disabled={userSequence.length !== sequence.length}
+                            >
+                                <Text style={styles.submitText}>🎯 Submit</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
-            )}
-        </View>
+                )}
+            </View>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        paddingTop: 40,
+    gradient: {
         flex: 1,
-        backgroundColor: '#FFF8E1',
-        padding: 20,
+    },
+    container: {
+        flex: 1,
+        paddingTop: 80,
+        paddingHorizontal: 20,
         alignItems: 'center',
     },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    center: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     header: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#D97706',
-        marginVertical: 10,
+        fontSize: 36,
+        fontWeight: '800',
+        color: '#FFD700',
+        marginBottom: 8,
+        letterSpacing: 1.5,
+        textShadowColor: 'rgba(255, 215, 0, 0.4)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 10,
     },
     subheader: {
         fontSize: 16,
-        color: '#A16207',
+        color: '#D1D5DB',
         marginBottom: 30,
+        textAlign: 'center',
+        fontWeight: '500',
+        opacity: 0.8,
     },
-    inputSection: { marginTop: 20, alignItems: 'center' },
-    label: { fontSize: 16, color: '#7C5D06', marginBottom: 10 },
+    inputSection: {
+        width: '100%',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    label: {
+        fontSize: 16,
+        color: '#e0e7ff',
+        marginBottom: 12,
+        fontWeight: '600',
+    },
     userSequence: {
         flexDirection: 'row',
         marginVertical: 20,
+        gap: 12,
         flexWrap: 'wrap',
         justifyContent: 'center',
-        gap: 10,
     },
-    userSymbol: { fontSize: 32, marginHorizontal: 8 },
-    placeholder: { fontSize: 32, color: '#ccc', marginHorizontal: 8 },
-    buttonRow: { flexDirection: 'row', gap: 20, marginTop: 20 },
+    userSymbol: {
+        fontSize: 36,
+        color: '#ffffff',
+        fontWeight: 'bold',
+        minWidth: 40,
+        textAlign: 'center',
+        textShadowColor: '#000',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 4,
+    },
+    placeholder: {
+        fontSize: 36,
+        color: '#6b7280',
+        minWidth: 40,
+        textAlign: 'center',
+    },
+    buttonRow: {
+        flexDirection: 'row',
+        gap: 20,
+        marginTop: 20,
+        width: '100%',
+        justifyContent: 'center',
+    },
     resetButton: {
-        backgroundColor: '#FF3B30',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 8,
+        backgroundColor: '#EF4444',
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        borderRadius: 16,
+        shadowColor: '#EF4444',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 6,
     },
-    resetText: { color: '#fff', fontWeight: '600' },
+    resetText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
     submitButton: {
-        backgroundColor: '#FF9500',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 8,
+        backgroundColor: '#F59E0B', // Amber for "premium"
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        borderRadius: 16,
+        shadowColor: '#F59E0B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+        elevation: 6,
     },
-    disabledButton: { backgroundColor: '#CD853F' },
-    submitText: { color: '#fff', fontWeight: '600' },
+    disabledButton: {
+        backgroundColor: '#9CA3AF',
+        shadowOpacity: 0.1,
+        elevation: 2,
+    },
+    submitText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700',
+    },
 });
 
 export default DailyChallengeScreen;

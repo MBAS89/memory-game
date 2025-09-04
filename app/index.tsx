@@ -1,3 +1,5 @@
+import StatusBarComponent from '@/components/StatusBar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -6,7 +8,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { usePersistedState } from '../hooks/usePersistedState';
 import { formatTime, getTimeUntilReset, isToday } from '../utils/timeUtils';
@@ -18,7 +20,7 @@ const HomeScreen = () => {
 
   const [countdown, setCountdown] = useState('');
 
-  // Daily challenge reset & countdown
+  // Handle daily challenge reset & countdown
   useEffect(() => {
     const checkReset = () => {
       if (lastDailyChallengeDate && !isToday(lastDailyChallengeDate)) {
@@ -49,150 +51,195 @@ const HomeScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Memory Master</Text>
-      <Text style={styles.subtitle}>Test your mind, one level at a time.</Text>
+    <LinearGradient
+      colors={['#1d2b53', '#1a1a2e', '#16213e']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.gradient}
+    >
+      <View style={styles.container}>
+        {/* Title & Subtitle */}
+        <Text style={styles.title}>Memory Master</Text>
+        <Text style={styles.subtitle}>Test your mind, one level at a time.</Text>
 
-      <ScrollView contentContainerStyle={styles.gridContainer}>
-        {Array.from({ length: 100 }, (_, i) => i + 1).map((levelNum) => {
-          const isUnlocked = levelNum <= highestUnlockedLevel;
-          const isCurrent = levelNum === highestUnlockedLevel;
-          const isCompleted = levelNum < highestUnlockedLevel;
+        <View style={styles.barContainer}>
+          {/* Status Bar */}
+          <StatusBarComponent />
+        </View>
 
-          return (
-            <Link
-              key={levelNum}
-              href={`/level/${levelNum}` as const}
-              asChild
-              disabled={!isUnlocked}
-              style={[
-                styles.levelButton,
-                !isUnlocked ? styles.lockedButton : {},
-                isCompleted && styles.completedButton,
-                isCurrent && styles.currentButton,
-              ]}
-            >
-              <TouchableOpacity
-                activeOpacity={isUnlocked ? 0.7 : 1}
+
+        {/* Level Grid */}
+        <ScrollView contentContainerStyle={styles.gridContainer}>
+          {Array.from({ length: 100 }, (_, i) => i + 1).map((levelNum) => {
+            const isUnlocked = levelNum <= highestUnlockedLevel;
+            const isCurrent = levelNum === highestUnlockedLevel;
+            const isCompleted = levelNum < highestUnlockedLevel;
+
+            return (
+              <Link
+                key={levelNum}
+                href={`/level/${levelNum}` as const}
+                asChild
                 disabled={!isUnlocked}
+                style={[
+                  styles.levelButton,
+                  !isUnlocked && styles.lockedButton,
+                  isCompleted && styles.completedButton,
+                  isCurrent && styles.currentButton,
+                ]}
               >
-                <Text style={styles.levelNumber}>
-                  {isUnlocked ? `LV:${levelNum}` : '🔒'}
-                </Text>
-                {!isUnlocked && <Text style={styles.lockLabel}>Locked</Text>}
-              </TouchableOpacity>
-            </Link>
-          );
-        })}
-      </ScrollView>
+                <TouchableOpacity
+                  activeOpacity={isUnlocked ? 0.7 : 1}
+                  disabled={!isUnlocked}
+                >
+                  <Text style={styles.levelNumber}>
+                    {isUnlocked ? `LV:${levelNum}` : '🔒'}
+                  </Text>
+                  {!isUnlocked && <Text style={styles.lockLabel}>Locked</Text>}
+                </TouchableOpacity>
+              </Link>
+            );
+          })}
+        </ScrollView>
 
-      <View style={styles.dailyButtonContainer}>
-        <TouchableOpacity
-          style={[
-            styles.dailyButton,
-            lastDailyChallengeDate && isToday(lastDailyChallengeDate) ? styles.disabledButton : {},
-          ]}
-          onPress={handleDailyChallengePress}
-          disabled={lastDailyChallengeDate ? isToday(lastDailyChallengeDate) : false}
-        >
-          <Text style={styles.dailyButtonText}>
-            {lastDailyChallengeDate && isToday(lastDailyChallengeDate)
-              ? `Next in: ${countdown}`
-              : '🎯 Daily Challenge'}
-          </Text>
-        </TouchableOpacity>
+        {/* Daily Challenge Button */}
+        <View style={styles.dailyButtonContainer}>
+          <TouchableOpacity
+            style={[
+              styles.dailyButton,
+              lastDailyChallengeDate && isToday(lastDailyChallengeDate)
+                ? styles.disabledButton
+                : {},
+            ]}
+            onPress={handleDailyChallengePress}
+            disabled={lastDailyChallengeDate ? isToday(lastDailyChallengeDate) : false}
+          >
+            <Text style={styles.dailyButtonText}>
+              {lastDailyChallengeDate && isToday(lastDailyChallengeDate)
+                ? `Next in: ${countdown}`
+                : '🎯 Daily Challenge'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Navigation Buttons */}
+        <View style={styles.navRow}>
+          <TouchableOpacity style={styles.navButton} onPress={() => router.push('/profile')}>
+            <Text style={styles.navText}>👤 Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navButton} onPress={() => router.push('/shop')}>
+            <Text style={styles.navText}>🛒 Shop</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f9',
     padding: 20,
-    paddingTop: 50,
+    paddingTop: 70, // Extra top padding for title & status
+  },
+  barContainer: {
+    marginLeft: -20
   },
   title: {
-    fontSize: 36,
+    fontSize: 42,
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: 8,
-    color: '#1d2b53',
-    letterSpacing: 1,
+    color: '#ffffff',
+    letterSpacing: 1.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
-    color: '#5a6a85',
+    color: '#e0e7ff',
     marginBottom: 24,
     fontWeight: '500',
+    opacity: 0.9,
   },
   gridContainer: {
+    paddingTop: 10,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 14,
-    paddingBottom: 30,
+    gap: 16,
+    paddingBottom: 60,
   },
   levelButton: {
-    width: '30%',
+    width: '26%',
     height: 40,
     aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    backgroundColor: '#ffffff10',
+    borderWidth: 2,
+    borderColor: '#ffffff30',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 6,
-    elevation: 6,
-    borderWidth: 2,
-    borderColor: '#e0e7ff',
-    position: 'relative',
+    elevation: 3,
   },
   completedButton: {
-    borderColor: '#23ed00ff',
-    backgroundColor: '#f8fdff',
+    borderColor: '#23ed00',
+    backgroundColor: '#23ed0020',
+    shadowColor: '#23ed00',
+    shadowOpacity: 0.3,
   },
   currentButton: {
     borderColor: '#5c9cff',
+    backgroundColor: '#5c9cff20',
     shadowColor: '#5c9cff',
-    shadowOpacity: 0.25,
-    elevation: 8,
-    transform: [{ scale: 1.03 }],
+    shadowOpacity: 0.4,
+    elevation: 6,
+    transform: [{ scale: 1.08 }],
+    borderWidth: 3,
   },
   lockedButton: {
-    backgroundColor: '#f0f1f3',
-    borderColor: '#d1d5db',
+    backgroundColor: '#ffffff08',
+    borderColor: '#ffffff20',
     opacity: 0.6,
   },
   levelNumber: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#656d7aff',
+    color: '#ffffff',
     textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   lockLabel: {
-    fontSize: 10,
-    color: '#94a3b8',
-    marginTop: 2,
+    fontSize: 9,
+    color: '#cccccc80',
+    marginTop: 1,
   },
   dailyButtonContainer: {
-    margin: 10
+    marginVertical: 10,
   },
   dailyButton: {
     backgroundColor: '#FF6B35',
     paddingVertical: 16,
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: 'center',
     marginHorizontal: 20,
     shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   disabledButton: {
     backgroundColor: '#FFB49A',
@@ -200,7 +247,31 @@ const styles = StyleSheet.create({
   dailyButtonText: {
     color: '#fff',
     fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  navRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 20,
+  },
+  navButton: {
+    backgroundColor: '#667eea',
+    padding: 16,
+    borderRadius: 14,
+    width: '40%',
+    alignItems: 'center',
+    shadowColor: '#667eea',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  navText: {
+    color: '#fff',
     fontWeight: '600',
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
 });
 
