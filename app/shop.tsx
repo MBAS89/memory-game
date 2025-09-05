@@ -68,12 +68,12 @@ const ShopScreen = () => {
                     <TouchableOpacity
                         style={[
                             styles.buyButton,
-                            profile.coins < HEART_COST || profile.hearts >= MAX_HEARTS
+                            profile.hearts >= MAX_HEARTS
                                 ? styles.disabledButton
                                 : {},
                         ]}
                         onPress={buyHeart}
-                        disabled={profile.coins < HEART_COST || profile.hearts >= MAX_HEARTS}
+                        disabled={profile.hearts >= MAX_HEARTS}
                     >
                         <Text style={styles.buyText}>
                             {profile.hearts >= MAX_HEARTS ? 'Max Hearts' : 'Buy Heart'}
@@ -85,7 +85,7 @@ const ShopScreen = () => {
                     )}
                 </View>
             </View>
-        </LinearGradient>
+        </LinearGradient >
     );
 };
 

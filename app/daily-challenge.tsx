@@ -31,8 +31,8 @@ const DailyChallengeScreen = () => {
 
     const [phase, setPhase] = useState<'countdown' | 'show' | 'input'>('countdown');
 
-    // Fixed difficulty ~level 20
-    const sequence = useMemo(() => generateSequence(20), []);
+    // Fixed difficulty ~level 30
+    const sequence = useMemo(() => generateSequence(30), []);
     const shuffledSymbols = useMemo(() => shuffleArray(sequence), [sequence]);
 
     const [userSequence, setUserSequence] = useState<string[]>([]);
@@ -81,18 +81,32 @@ const DailyChallengeScreen = () => {
             });
             playSound('success');
             Alert.alert(
-                '🎉 Challenge Complete!',
-                'You earned 100 XP and 50 coins! See you tomorrow for a new challenge.',
-                [{ text: 'Back to Menu', onPress: () => router.push('/') }]
+                '🎉 Daily Challenge Conquered!',
+                `Incredible job! You've crushed today's challenge and earned:\n\n✨ +100 XP  → Leveling up fast!\n🪙 +50 Coins → Spend them in the shop!\n\nCome back tomorrow for another chance to earn big! 🌟`,
+                [
+                    {
+                        text: '🏠 Back to Menu',
+                        onPress: () => router.push('/'),
+                        style: 'default',
+                    },
+                ]
             );
         } else {
             playSound('failure');
             Alert.alert(
-                '❌ Try Again',
-                'Incorrect sequence. Want to give it another shot?',
+                '❌ Not Quite Right — But You’re Getting Warmer!',
+                `Mistakes are just proof you're learning! 💡\n\nThe sequence wasn’t perfect this time, but one more try could be the winning one. 🎯\n\nKeep going — your brain is building muscle with every attempt! 💪`,
                 [
-                    { text: 'Give Up', style: 'cancel', onPress: () => router.push('/') },
-                    { text: 'Retry', style: 'default', onPress: handleReset },
+                    {
+                        text: '🔄 Try Again',
+                        style: 'default',
+                        onPress: handleReset,
+                    },
+                    {
+                        text: '🏠 Back to Menu',
+                        style: 'cancel',
+                        onPress: () => router.push('/'),
+                    },
                 ]
             );
         }

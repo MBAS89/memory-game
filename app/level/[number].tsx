@@ -74,48 +74,82 @@ const LevelScreen = () => {
             });
             playSound('success');
             Alert.alert(
-                '🎉 Success!',
-                `Level ${level} completed!`,
+                '🎉 Congratulations! You Did It!',
+                `Amazing work completing Level ${level}\n\n✨ What you've earned:\n• ✨ +${earnedXP} XP\n• 🪙 +5 Coins\n• 🔓 Level ${nextLevel} Unlocked!\n• 🏆 +1 Level Completed`,
                 [
                     {
-                        text: 'Back to Menu',
+                        text: '🏠 Back to Menu',
                         onPress: () => {
                             if (level === highestUnlockedLevel) {
-                                setHighestUnlockedLevel(Math.min(nextLevel, 100)); // ✅ stay max 100
+                                setHighestUnlockedLevel(Math.min(nextLevel, 100));
                             }
-                            stopSound('success')
-                            router.replace('/')
+                            stopSound('success');
+                            router.replace('/');
                         },
                     },
                     !isLastLevel
                         ? {
-                            text: 'Next Level',
+                            text: '⏭️ Next Level',
                             onPress: () => {
                                 if (level === highestUnlockedLevel) {
-                                    setHighestUnlockedLevel(Math.min(nextLevel, 100)); // ✅ stay max 100
+                                    setHighestUnlockedLevel(Math.min(nextLevel, 100));
                                 }
-                                stopSound('success')
+                                stopSound('success');
                                 router.replace(`/level/${nextLevel}`);
                             },
                             style: 'default',
                         }
                         : null,
-                ].filter(Boolean) as any)
+                ].filter(Boolean) as any
+            );
         } else {
-            playSound('failure');
-            if (profile.hearts > 0) {
+            if (profile.hearts > 0 && profile.hearts !== 0) {
                 updateProfile({ hearts: profile.hearts - 1 });
-                Alert.alert('❌ Try Again', 'Incorrect sequence. Want to give it another shot?', [
-                    { text: 'Give Up', style: 'cancel', onPress: () => { stopSound('failure'); router.push('/') } },
-                    { text: 'Retry', style: 'default', onPress: handleReset },
-                ]);
-            } else {
+                playSound('failure'); // Optional: ensure this plays only once
                 Alert.alert(
-                    'Out of Hearts!',
-                    'Buy more in the shop or wait for tomorrow.',
+                    '❌ Not Quite! Keep Going!',
+                    `One heart lost, but you're still in the game! ❤️‍🔥\n\nYou’ve got ${profile.hearts - 1} ❤️ left.\n\n💡 Remember: Every mistake is progress in disguise.\nWant to try again and nail it?`,
                     [
-                        { text: 'Later', style: 'cancel' },
-                        { text: 'Go to Shop', onPress: () => router.push('/shop') }
+                        {
+                            text: '🎯 Try Again',
+                            style: 'default',
+                            onPress: () => {
+                                stopSound('failure');
+                                handleReset();
+                            },
+                        },
+                        {
+                            text: '🏠 Give Up',
+                            style: 'cancel',
+                            onPress: () => {
+                                stopSound('failure');
+                                router.push('/');
+                            },
+                        },
+                    ]
+                );
+            } else {
+                playSound('outOfHearts');
+                Alert.alert(
+                    '💔 Oh No! Hearts Are Gone!',
+                    `You've used all your hearts for now… but don’t worry! 🌅\n\nYou can:\n🛒 🛍️ Buy more in the Shop\n🕒 Or wait until tomorrow to recharge\n\nEvery master was once a beginner — rest up and come back stronger! 💪`,
+                    [
+                        {
+                            text: '🏠 Back to Menu',
+                            style: 'cancel',
+                            onPress: () => {
+                                stopSound('outOfHearts');
+                                router.push('/');
+                            },
+                        },
+                        {
+                            text: '🛍️ Go to Shop',
+                            style: 'default',
+                            onPress: () => {
+                                stopSound('outOfHearts');
+                                router.push('/shop');
+                            },
+                        },
                     ]
                 );
             }
