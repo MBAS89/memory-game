@@ -1,5 +1,4 @@
 import BackButton from '@/components/BackButton';
-import { useProfile } from '@/hooks/useProfile';
 import { useSound } from '@/hooks/useSound';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -20,10 +19,11 @@ import { generateSequence } from '../../utils/generateSequence';
 import { shuffleArray } from '../../utils/shuffleArray';
 
 import StatusBarComponent from '@/components/StatusBar';
+import { useProfileContext } from '@/contexts/ProfileContext';
 
 const LevelScreen = () => {
     const { playSound, stopSound } = useSound();
-    const { profile, updateProfile } = useProfile();
+    const { profile, updateProfile } = useProfileContext();
     const { number } = useLocalSearchParams<{ number: string }>();
     const level = Number(number || 1);
     const router = useRouter();

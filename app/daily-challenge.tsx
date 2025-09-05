@@ -1,6 +1,6 @@
 import BackButton from '@/components/BackButton';
 import StatusBarComponent from '@/components/StatusBar';
-import { useProfile } from '@/hooks/useProfile';
+import { useProfileContext } from '@/contexts/ProfileContext';
 import { useSound } from '@/hooks/useSound';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -23,7 +23,7 @@ import { getTodayString, isToday } from '../utils/timeUtils';
 
 const DailyChallengeScreen = () => {
     const { playSound } = useSound();
-    const { profile, updateProfile } = useProfile();
+    const { profile, updateProfile } = useProfileContext();
     const router = useRouter();
 
     const [lastDailyChallengeDate, setLastDailyChallengeDate, loadingPersist] =

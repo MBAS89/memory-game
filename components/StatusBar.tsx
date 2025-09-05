@@ -1,11 +1,11 @@
 // components/StatusBar.tsx
-import { useProfile } from '@/hooks/useProfile';
+import { useProfileContext } from '@/contexts/ProfileContext'; // CHANGE THIS IMPORT
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const StatusBarComponent = () => {
-    const { profile } = useProfile();
+    const { profile } = useProfileContext();
     const { push } = useRouter();
 
     return (
@@ -32,6 +32,8 @@ const StatusBarComponent = () => {
         </TouchableOpacity>
     );
 };
+
+export default StatusBarComponent;
 
 const styles = StyleSheet.create({
     container: {
@@ -74,5 +76,3 @@ const styles = StyleSheet.create({
         fontSize: 20,
     },
 });
-
-export default StatusBarComponent;

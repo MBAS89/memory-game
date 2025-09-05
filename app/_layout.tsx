@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+import { ProfileProvider } from '../contexts/ProfileContext';
 import { useProfile } from '../hooks/useProfile';
 
 // Fix Reanimated warnings
@@ -42,26 +43,28 @@ export default function RootLayout() {
 
   // Don't render anything until profile is loaded
   if (loading || !soundsLoaded) {
-    return null; // You can add a splash screen here later
+    return null;
   }
 
   return (
-    <>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{ headerShown: false, animation: 'fade' }}
-      >
-        {profile.username ? (
-          <>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="profile" />
-            <Stack.Screen name="shop" />
-            <Stack.Screen name="daily-challenge" />
-          </>
-        ) : (
-          <Stack.Screen name="onboarding" />
-        )}
-      </Stack>
-    </>
+    <ProfileProvider>
+      <>
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{ headerShown: false, animation: 'fade' }}
+        >
+          {profile.username ? (
+            <>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="profile" />
+              <Stack.Screen name="shop" />
+              <Stack.Screen name="daily-challenge" />
+            </>
+          ) : (
+            <Stack.Screen name="onboarding" />
+          )}
+        </Stack>
+      </>
+    </ProfileProvider>
   );
 }

@@ -1,5 +1,5 @@
 import BackButton from '@/components/BackButton';
-import { useProfile } from '@/hooks/useProfile';
+import { useProfileContext } from '@/contexts/ProfileContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import {
@@ -12,7 +12,7 @@ import {
 
 
 const ShopScreen = () => {
-    const { profile, updateProfile } = useProfile();
+    const { profile, updateProfile } = useProfileContext();
     const MAX_HEARTS = 5;
     const HEART_COST = 50;
 

@@ -1,5 +1,5 @@
 import BackButton from '@/components/BackButton';
-import { useProfile } from '@/hooks/useProfile';
+import { useProfileContext } from '@/contexts/ProfileContext';
 import { RANKS, getCurrentRank } from '@/utils/ranks';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
@@ -16,7 +16,7 @@ import {
 
 
 const ProfileScreen = () => {
-    const { profile, updateProfile } = useProfile();
+    const { profile, updateProfile } = useProfileContext();
     const [isEditing, setIsEditing] = useState(false);
     const [newUsername, setNewUsername] = useState(profile.username || 'Player');
 
