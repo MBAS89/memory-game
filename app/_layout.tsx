@@ -6,6 +6,10 @@ import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-rean
 import { ProfileProvider } from '../contexts/ProfileContext';
 import { useProfile } from '../hooks/useProfile';
 
+import { useTranslation } from 'react-i18next';
+import { I18nManager } from 'react-native';
+import '../utils/i18n'; // <-- Import i18n config
+
 // Fix Reanimated warnings
 configureReanimatedLogger({
   level: ReanimatedLogLevel.error,
@@ -13,6 +17,20 @@ configureReanimatedLogger({
 });
 
 export default function RootLayout() {
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    // Set RTL based on language
+    const isRTL = i18n.language === 'ar';
+    I18nManager.allowRTL(isRTL);
+    I18nManager.forceRTL(isRTL);
+    // Reload app to apply RTL (Expo-only workaround)
+    if (isRTL !== I18nManager.isRTL) {
+      // You can use AppState or reload manually
+      console.log('🔁 RTL set:', isRTL);
+    }
+  }, [i18n.language]);
+
   const [soundsLoaded, setSoundsLoaded] = useState(false);
   const { profile, loading, claimDailyHeart } = useProfile();
 

@@ -20,9 +20,11 @@ import { shuffleArray } from '../../utils/shuffleArray';
 
 import StatusBarComponent from '@/components/StatusBar';
 import { useProfileContext } from '@/contexts/ProfileContext';
+import { useTranslation } from 'react-i18next';
 
 const LevelScreen = () => {
     const { playSound, stopSound } = useSound();
+    const { t } = useTranslation()
     const { profile, updateProfile } = useProfileContext();
     const { number } = useLocalSearchParams<{ number: string }>();
     const level = Number(number || 1);
@@ -74,11 +76,11 @@ const LevelScreen = () => {
             });
             playSound('success');
             Alert.alert(
-                '🎉 Congratulations! You Did It!',
-                `Amazing work completing Level ${level}\n\n✨ What you've earned:\n• ✨ +${earnedXP} XP\n• 🪙 +5 Coins\n• 🔓 Level ${nextLevel} Unlocked!\n• 🏆 +1 Level Completed`,
+                t('congrats'),
+                `${t('earnedOnLevel', { level })}\n\n${t('unlockedNext', { next: nextLevel })}\n${t('completedLevel')}\n${t('earnedCoin')}\n${t('earnedXp', { xp: earnedXP })}`,
                 [
                     {
-                        text: '🏠 Back to Menu',
+                        text: t('backToMenu'),
                         onPress: () => {
                             if (level === highestUnlockedLevel) {
                                 setHighestUnlockedLevel(Math.min(nextLevel, 100));
@@ -89,7 +91,7 @@ const LevelScreen = () => {
                     },
                     !isLastLevel
                         ? {
-                            text: '⏭️ Next Level',
+                            text: t('nextLevel'),
                             onPress: () => {
                                 if (level === highestUnlockedLevel) {
                                     setHighestUnlockedLevel(Math.min(nextLevel, 100));
@@ -107,11 +109,11 @@ const LevelScreen = () => {
                 updateProfile({ hearts: profile.hearts - 1 });
                 playSound('failure'); // Optional: ensure this plays only once
                 Alert.alert(
-                    '❌ Not Quite! Keep Going!',
-                    `One heart lost, but you're still in the game! ❤️‍🔥\n\nYou’ve got ${profile.hearts - 1} ❤️ left.\n\n💡 Remember: Every mistake is progress in disguise.\nWant to try again and nail it?`,
+                    t('notQuiteLevel'),
+                    `${t('oneHeartLost')}\n${t('heartsLeft', { hearts: profile.hearts - 1 })}\n${t('everyMistake')}`,
                     [
                         {
-                            text: '🎯 Try Again',
+                            text: t('tryAgainButton'),
                             style: 'default',
                             onPress: () => {
                                 stopSound('failure');
@@ -119,11 +121,11 @@ const LevelScreen = () => {
                             },
                         },
                         {
-                            text: '🏠 Give Up',
+                            text: t('giveUp'),
                             style: 'cancel',
                             onPress: () => {
                                 stopSound('failure');
-                                router.push('/');
+                                router.replace('/');
                             },
                         },
                     ]
@@ -131,23 +133,23 @@ const LevelScreen = () => {
             } else {
                 playSound('outOfHearts');
                 Alert.alert(
-                    '💔 Oh No! Hearts Are Gone!',
-                    `You've used all your hearts for now… but don’t worry! 🌅\n\nYou can:\n🛒 🛍️ Buy more in the Shop\n🕒 Or wait until tomorrow to recharge\n\nEvery master was once a beginner — rest up and come back stronger! 💪`,
+                    t('outOfHearts'),
+                    `${t('usedAllHearts')}\n${t('canBuyOrWait')}\n${t('buyMore')}\n${t('waitUntilTomorrow')}\n${t('masterWasBeginner')}`,
                     [
                         {
-                            text: '🏠 Back to Menu',
+                            text: t('backToMenu'),
                             style: 'cancel',
                             onPress: () => {
                                 stopSound('outOfHearts');
-                                router.push('/');
+                                router.replace('/');
                             },
                         },
                         {
-                            text: '🛍️ Go to Shop',
+                            text: t('goToShop'),
                             style: 'default',
                             onPress: () => {
                                 stopSound('outOfHearts');
-                                router.push('/shop');
+                                router.replace('/shop');
                             },
                         },
                     ]
@@ -181,8 +183,8 @@ const LevelScreen = () => {
                 <BackButton />
                 <StatusBarComponent />
 
-                <Text style={styles.header}>Level {level}</Text>
-                <Text style={styles.subheader}>Remember the order!</Text>
+                <Text style={styles.header}>{t('level')} {level}</Text>
+                <Text style={styles.subheader}>{t('rememberOrder')}</Text>
 
                 {phase === 'countdown' && <Countdown onComplete={handleStart} />}
 
@@ -196,7 +198,7 @@ const LevelScreen = () => {
 
                 {phase === 'input' && (
                     <View style={styles.inputSection}>
-                        <Text style={styles.label}>Tap symbols in order:</Text>
+                        <Text style={styles.label}>{t('recreateSequence')}</Text>
 
                         <GridContainer>
                             {shuffledSymbols.map((symbol, i) => (
@@ -226,7 +228,7 @@ const LevelScreen = () => {
                         {/* Action Buttons */}
                         <View style={styles.buttonRow}>
                             <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-                                <Text style={styles.resetText}>🔄 Reset</Text>
+                                <Text style={styles.resetText}>{t('reset')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[
@@ -236,7 +238,7 @@ const LevelScreen = () => {
                                 onPress={handleSubmit}
                                 disabled={userSequence.length !== sequence.length}
                             >
-                                <Text style={styles.submitText}>✅ Submit</Text>
+                                <Text style={styles.submitText}>{t('submit')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -282,6 +284,7 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         marginTop: 10,
+        writingDirection: 'ltr',
     },
     label: {
         fontSize: 16,

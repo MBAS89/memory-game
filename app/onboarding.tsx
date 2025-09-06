@@ -2,6 +2,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Alert,
     StyleSheet,
@@ -13,6 +14,7 @@ import {
 
 const OnboardingScreen = () => {
     const { updateProfile } = useProfile();
+    const { t } = useTranslation();
     const router = useRouter();
     const [username, setUsername] = useState('');
 
@@ -33,8 +35,8 @@ const OnboardingScreen = () => {
             style={styles.gradient}
         >
             <View style={styles.container}>
-                <Text style={styles.title}>Welcome to Memory Master! 🎮</Text>
-                <Text style={styles.subtitle}>What should we call you?</Text>
+                <Text style={styles.title}>{t('welcome')}</Text>
+                <Text style={styles.subtitle}>{t('enterName')}</Text>
 
                 <TextInput
                     style={styles.input}
@@ -49,7 +51,7 @@ const OnboardingScreen = () => {
                 />
 
                 <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-                    <Text style={styles.buttonText}>🚀 Start Playing</Text>
+                    <Text style={styles.buttonText}>{t('startPlaying')}</Text>
                 </TouchableOpacity>
             </View>
         </LinearGradient>

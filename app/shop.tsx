@@ -2,6 +2,7 @@ import BackButton from '@/components/BackButton';
 import { useProfileContext } from '@/contexts/ProfileContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Alert,
     StyleSheet,
@@ -13,6 +14,7 @@ import {
 
 const ShopScreen = () => {
     const { profile, updateProfile } = useProfileContext();
+    const { t } = useTranslation();
     const MAX_HEARTS = 5;
     const HEART_COST = 50;
 
@@ -47,7 +49,7 @@ const ShopScreen = () => {
                 <BackButton />
 
                 {/* Title */}
-                <Text style={styles.title}>🛒 Shop</Text>
+                <Text style={styles.title}>{t('shopTitle')}</Text>
 
                 {/* Player Stats */}
                 <View style={styles.statsRow}>
@@ -62,8 +64,8 @@ const ShopScreen = () => {
 
                 {/* Item Card */}
                 <View style={styles.card}>
-                    <Text style={styles.itemName}>❤️ Extra Heart</Text>
-                    <Text style={styles.itemPrice}>Cost: {HEART_COST} coins</Text>
+                    <Text style={styles.itemName}>{t('buyHeart')}</Text>
+                    <Text style={styles.itemPrice}>{t('needCoins').split('50')[0]} {HEART_COST} {t('needCoins').split('50')[1]}</Text>
 
                     <TouchableOpacity
                         style={[
@@ -76,12 +78,12 @@ const ShopScreen = () => {
                         disabled={profile.hearts >= MAX_HEARTS}
                     >
                         <Text style={styles.buyText}>
-                            {profile.hearts >= MAX_HEARTS ? 'Max Hearts' : 'Buy Heart'}
+                            {profile.hearts >= MAX_HEARTS ? t('maxHearts') : t('buyHeart')}
                         </Text>
                     </TouchableOpacity>
 
                     {profile.hearts >= MAX_HEARTS && (
-                        <Text style={styles.maxMessage}>You already have the maximum number of hearts.</Text>
+                        <Text style={styles.maxMessage}>{t('fiveHearts')}</Text>
                     )}
                 </View>
             </View>
@@ -146,6 +148,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 12,
         elevation: 6,
+        textAlign: 'center'
     },
     itemName: {
         fontSize: 24,
@@ -159,6 +162,7 @@ const styles = StyleSheet.create({
         color: '#FFB49A',
         marginBottom: 20,
         fontWeight: '500',
+        textAlign: 'center'
     },
     buyButton: {
         backgroundColor: '#FF6B35',

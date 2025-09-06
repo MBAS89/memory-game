@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     selected: { borderColor: '#007AFF', backgroundColor: '#E5F1FF' },
-    disabled: { opacity: 0.5 },
+    disabled: { opacity: 0.8 },
     symbol: { fontSize: 28 },
 });
 

@@ -14,7 +14,7 @@ const StatusBarComponent = () => {
                 {/* Hearts */}
                 <View style={styles.stat}>
                     <Text style={styles.heart}>❤️</Text>
-                    <Text style={styles.value}>{profile.hearts}</Text>
+                    <Text style={styles.value}>{profile.hearts}/5</Text>
                 </View>
 
                 {/* XP */}

@@ -1,8 +1,9 @@
 import BackButton from '@/components/BackButton';
 import { useProfileContext } from '@/contexts/ProfileContext';
-import { RANKS, getCurrentRank } from '@/utils/ranks';
+import { getCurrentRank, RANKSArabic, RANKSEnglish } from '@/utils/ranks';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Alert,
     FlatList,
@@ -19,7 +20,7 @@ const ProfileScreen = () => {
     const { profile, updateProfile } = useProfileContext();
     const [isEditing, setIsEditing] = useState(false);
     const [newUsername, setNewUsername] = useState(profile.username || 'Player');
-
+    const { i18n, t } = useTranslation();
     const currentRank = getCurrentRank(profile.xp);
 
     const handleNameChange = () => {
@@ -81,7 +82,7 @@ const ProfileScreen = () => {
         >
             <View style={styles.container}>
                 <BackButton />
-                <Text style={styles.title}>👤 Your Profile</Text>
+                <Text style={styles.title}>{t('yourProfile')}</Text>
 
                 {/* Player Stats Card */}
                 <View style={styles.statCard}>
@@ -109,22 +110,39 @@ const ProfileScreen = () => {
                         </View>
                     </TouchableWithoutFeedback>
 
-                    <Text style={styles.sub}>Tap to edit your name</Text>
+                    <Text style={styles.sub}>{t('tapToEdit')}</Text>
 
                     {/* Stats */}
                     <View style={styles.statRow}>
-                        <Text style={styles.stat}>🎯 {profile.totalLevelsCompleted} Levels</Text>
-                        <Text style={styles.stat}>✨ {profile.xp.toLocaleString()} XP</Text>
+                        <Text style={styles.stat}>{t('levelsCompleted', { count: profile.totalLevelsCompleted })}</Text>
+                        <Text style={styles.stat}>{t('totalXp', { xp: profile.xp.toLocaleString() })}</Text>
                     </View>
                     <View style={styles.statRow}>
-                        <Text style={styles.stat}>🪙 {profile.coins} Coins</Text>
-                        <Text style={styles.stat}>❤️ {profile.hearts}/5</Text>
+                        <Text style={styles.stat}>{t('coins', { coins: profile.coins })}</Text>
+                        <Text style={styles.stat}>{t('hearts', { hearts: profile.hearts })}</Text>
                     </View>
+                </View>
+
+                {/* Language Switch Button */}
+                {/* Language Switch */}
+                <View style={styles.languageContainer}>
+                    <TouchableOpacity
+                        style={styles.languageButton}
+                        onPress={() => {
+                            const newLang = i18n.language === 'en' ? 'ar' : 'en';
+                            i18n.changeLanguage(newLang);
+                        }}
+                    >
+                        <Text style={styles.languageIcon}>🌐</Text>
+                        <Text style={styles.languageText}>
+                            {i18n.language === 'en' ? '→ العربية' : '→ English'}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Current Rank */}
                 <View style={styles.currentRankCard}>
-                    <Text style={styles.currentTitle}>Your Rank</Text>
+                    <Text style={styles.currentTitle}>{t('currentRank')}</Text>
                     <Text style={styles.currentRankName}>
                         {currentRank.icon} {currentRank.name}
                     </Text>
@@ -132,14 +150,24 @@ const ProfileScreen = () => {
                 </View>
 
                 {/* Rank Progression List */}
-                <Text style={styles.listTitle}>🏆 Rank Progression</Text>
-                <FlatList
-                    data={RANKS}
-                    keyExtractor={(item) => item.name}
-                    renderItem={renderRank}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.listContainer}
-                />
+                <Text style={styles.listTitle}>{t('rankProgression')}</Text>
+                {i18n.language === 'en' ?
+                    <FlatList
+                        data={RANKSEnglish}
+                        keyExtractor={(item) => item.name}
+                        renderItem={renderRank}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.listContainer}
+                    /> :
+                    <FlatList
+                        data={RANKSArabic}
+                        keyExtractor={(item) => item.name}
+                        renderItem={renderRank}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.listContainer}
+                    />
+                }
+
             </View>
         </LinearGradient>
     );
@@ -330,6 +358,39 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.4,
         shadowOffset: { width: 0, height: 2 },
         shadowRadius: 6,
+    },
+    languageContainer: {
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    languageButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1a2138',
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        borderRadius: 28,
+        borderWidth: 2,
+        borderColor: '#5c9cff40',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 5,
+        minWidth: '100%',
+        justifyContent: 'center',
+    },
+    languageIcon: {
+        fontSize: 22,
+        color: '#ffffff',
+        marginRight: 10,
+    },
+    languageText: {
+        fontSize: 16,
+        color: '#ffffff',
+        fontWeight: '600',
+        fontFamily: 'System',
     },
 });
 

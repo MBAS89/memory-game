@@ -2,6 +2,7 @@ import StatusBarComponent from '@/components/StatusBar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   ScrollView,
@@ -17,7 +18,7 @@ const HomeScreen = () => {
   const router = useRouter();
   const [highestUnlockedLevel, setHighestUnlockedLevel] = usePersistedState<number>('highestUnlockedLevel', 1);
   const [lastDailyChallengeDate, setLastDailyChallengeDate] = usePersistedState<string | null>('lastDailyChallengeDate', null);
-
+  const { t } = useTranslation();
   const [countdown, setCountdown] = useState('');
 
   // Handle daily challenge reset & countdown
@@ -59,8 +60,8 @@ const HomeScreen = () => {
     >
       <View style={styles.container}>
         {/* Title & Subtitle */}
-        <Text style={styles.title}>Memory Master</Text>
-        <Text style={styles.subtitle}>Test your mind, one level at a time.</Text>
+        <Text style={styles.title}>{t('title')}</Text>
+        <Text style={styles.subtitle}>{t('subtitle')}</Text>
 
         <View style={styles.barContainer}>
           {/* Status Bar */}
@@ -93,9 +94,9 @@ const HomeScreen = () => {
                   disabled={!isUnlocked}
                 >
                   <Text style={styles.levelNumber}>
-                    {isUnlocked ? `LV:${levelNum}` : '🔒'}
+                    {isUnlocked ? `${t('level')}${levelNum}` : '🔒'}
                   </Text>
-                  {!isUnlocked && <Text style={styles.lockLabel}>Locked</Text>}
+                  {!isUnlocked && <Text style={styles.lockLabel}>{t('locked')}</Text>}
                 </TouchableOpacity>
               </Link>
             );
@@ -116,8 +117,8 @@ const HomeScreen = () => {
           >
             <Text style={styles.dailyButtonText}>
               {lastDailyChallengeDate && isToday(lastDailyChallengeDate)
-                ? `Next in: ${countdown}`
-                : '🎯 Daily Challenge'}
+                ? `${t('nextIn')} ${countdown}`
+                : t('dailyChallenge')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -125,10 +126,10 @@ const HomeScreen = () => {
         {/* Navigation Buttons */}
         <View style={styles.navRow}>
           <TouchableOpacity style={styles.navButton} onPress={() => router.push('/profile')}>
-            <Text style={styles.navText}>👤 Profile</Text>
+            <Text style={styles.navText}>{t('profile')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navButton} onPress={() => router.push('/shop')}>
-            <Text style={styles.navText}>🛒 Shop</Text>
+          <TouchableOpacity style={[styles.navButton]} onPress={() => router.push('/shop')}>
+            <Text style={styles.navText}>{t('shop')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
     letterSpacing: 0.5,
-  },
+  }
 });
 
 export default HomeScreen;

@@ -16,6 +16,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         width: '100%',
         maxWidth: 300,
+        writingDirection: 'ltr',
     },
 });
 

@@ -5,6 +5,7 @@ import { useSound } from '@/hooks/useSound';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
     Alert,
@@ -24,6 +25,7 @@ import { getTodayString, isToday } from '../utils/timeUtils';
 const DailyChallengeScreen = () => {
     const { playSound } = useSound();
     const { profile, updateProfile } = useProfileContext();
+    const { t } = useTranslation();
     const router = useRouter();
 
     const [lastDailyChallengeDate, setLastDailyChallengeDate, loadingPersist] =
@@ -43,8 +45,8 @@ const DailyChallengeScreen = () => {
     useEffect(() => {
         if (!loadingPersist && lastDailyChallengeDate && isToday(lastDailyChallengeDate)) {
             Alert.alert(
-                '🌟 Already Completed',
-                'You crushed today’s challenge! Come back tomorrow for a new one.',
+                t('dailyChallengeFinish'),
+                t('dailyChallengeFinishSub'),
                 [{ text: 'Back', onPress: () => router.back() }]
             );
         }
@@ -81,12 +83,12 @@ const DailyChallengeScreen = () => {
             });
             playSound('success');
             Alert.alert(
-                '🎉 Daily Challenge Conquered!',
-                `Incredible job! You've crushed today's challenge and earned:\n\n✨ +100 XP  → Leveling up fast!\n🪙 +50 Coins → Spend them in the shop!\n\nCome back tomorrow for another chance to earn big! 🌟`,
+                t('dailyConquered'),
+                `${t('earned')}\n${t('xpGained')}\n${t('coinsGained')}\n${t('comeBackTomorrow')}`,
                 [
                     {
-                        text: '🏠 Back to Menu',
-                        onPress: () => router.push('/'),
+                        text: t('backToMenu'),
+                        onPress: () => router.replace('/'),
                         style: 'default',
                     },
                 ]
@@ -94,18 +96,18 @@ const DailyChallengeScreen = () => {
         } else {
             playSound('failure');
             Alert.alert(
-                '❌ Not Quite Right — But You’re Getting Warmer!',
-                `Mistakes are just proof you're learning! 💡\n\nThe sequence wasn’t perfect this time, but one more try could be the winning one. 🎯\n\nKeep going — your brain is building muscle with every attempt! 💪`,
+                t('notQuite'),
+                t('mistakesAreGood'),
                 [
                     {
-                        text: '🔄 Try Again',
+                        text: t('tryAgain'),
                         style: 'default',
                         onPress: handleReset,
                     },
                     {
-                        text: '🏠 Back to Menu',
+                        text: t('backToMenu'),
                         style: 'cancel',
-                        onPress: () => router.push('/'),
+                        onPress: () => router.replace('/'),
                     },
                 ]
             );
@@ -134,8 +136,8 @@ const DailyChallengeScreen = () => {
                 <StatusBarComponent />
 
                 {/* Title */}
-                <Text style={styles.header}>🌟 Daily Challenge</Text>
-                <Text style={styles.subheader}>One per day — prove your memory!</Text>
+                <Text style={styles.header}>{t('dailyChallenge')}</Text>
+                <Text style={styles.subheader}>{t('tryTomorrow')}</Text>
 
                 {phase === 'countdown' && <Countdown onComplete={handleStart} />}
 
@@ -149,7 +151,7 @@ const DailyChallengeScreen = () => {
 
                 {phase === 'input' && (
                     <View style={styles.inputSection}>
-                        <Text style={styles.label}>Recreate the sequence:</Text>
+                        <Text style={styles.label}>{t('recreateSequence')}</Text>
 
                         <GridContainer>
                             {shuffledSymbols.map((symbol, i) => (
@@ -179,7 +181,7 @@ const DailyChallengeScreen = () => {
                         {/* Action Buttons */}
                         <View style={styles.buttonRow}>
                             <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-                                <Text style={styles.resetText}>🔄 Reset</Text>
+                                <Text style={styles.resetText}>{t('reset')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[
@@ -189,7 +191,7 @@ const DailyChallengeScreen = () => {
                                 onPress={handleSubmit}
                                 disabled={userSequence.length !== sequence.length}
                             >
-                                <Text style={styles.submitText}>🎯 Submit</Text>
+                                <Text style={styles.submitText}>{t('submit')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

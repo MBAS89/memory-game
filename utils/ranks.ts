@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 
 export type Rank = {
     name: string;
@@ -6,20 +7,35 @@ export type Rank = {
     description: string;
 };
 
-export const RANKS: Rank[] = [
-    { name: 'Novice', icon: '🧠', xpRequired: 0, description: 'Just starting your memory journey' },
-    { name: 'Rememberer', icon: '🔍', xpRequired: 200, description: 'You never forget a pattern' },
-    { name: 'Mnemonist', icon: '🧩', xpRequired: 500, description: 'Master of mental patterns' },
-    { name: 'Cognoscente', icon: '🔮', xpRequired: 1000, description: 'Sees patterns in chaos' },
-    { name: 'Archivist', icon: '📚', xpRequired: 10000, description: 'Your mind is a library' },
-    { name: 'Synaptic', icon: '⚡', xpRequired: 100000, description: 'Neural pathways firing fast' },
-    { name: 'Savant', icon: '🌟', xpRequired: 500000, description: 'Genius-level recall' },
-    { name: 'Oracle', icon: '🕊️', xpRequired: 1000000, description: 'Sees the unseen' },
+
+export const RANKSEnglish: Rank[] = [
+    { name: 'Newbie', icon: '🧠', xpRequired: 0, description: 'Your memory adventure begins now!' },
+    { name: 'Learner', icon: '🔍', xpRequired: 500, description: 'You’re starting to connect the dots!' },
+    { name: 'Thinker', icon: '🧩', xpRequired: 1000, description: 'You see patterns others miss.' },
+    { name: 'Strategist', icon: '🎯', xpRequired: 5000, description: 'You master the game of memory.' },
+    { name: 'Sage', icon: '📚', xpRequired: 10000, description: 'A wise library of knowledge.' },
+    { name: 'Lightning Mind', icon: '⚡', xpRequired: 100000, description: 'Your recall is instant and powerful.' },
+    { name: 'Genius', icon: '🌟', xpRequired: 500000, description: 'A true master of mental prowess.' },
+    { name: 'Memory Legend', icon: '🏆', xpRequired: 1000000, description: 'You have achieved the impossible.' },
+];
+
+export const RANKSArabic: Rank[] = [
+    { name: 'مبتدئ', icon: '🧠', xpRequired: 0, description: 'رحلة ذاكرتك الجميلة تبدأ الآن!' },
+    { name: 'متدرب', icon: '🔍', xpRequired: 500, description: 'بدأت تربط الأفكار بذكاء!' },
+    { name: 'محلل', icon: '🧩', xpRequired: 1000, description: 'ترى الأنماط الخفية بسهولة.' },
+    { name: 'خطّاط', icon: '🎯', xpRequired: 5000, description: 'تخطط وتتذكر ببراعة.' },
+    { name: 'حكيم', icon: '📚', xpRequired: 10000, description: 'عقلك كنز من الحكمة والمعرفة.' },
+    { name: 'برق', icon: '⚡', xpRequired: 100000, description: 'ذاكرتك سريعة كالبرق!' },
+    { name: 'عبقري', icon: '🌟', xpRequired: 500000, description: 'لقد وصلت إلى مستوى الابتكار.' },
+    { name: 'أسطورة', icon: '🏆', xpRequired: 1000000, description: 'لقد تجاوزت المألوف وصرت أسطورة!' },
 ];
 
 export const getCurrentRank = (xp: number): Rank => {
-    let rank = RANKS[0];
-    for (const r of RANKS) {
+    const { i18n } = useTranslation(); 
+
+    let rank = i18n.language === 'en' ? RANKSEnglish[0]: RANKSArabic[0];
+
+    for (const r of i18n.language === 'en' ?RANKSEnglish : RANKSArabic) {
         if (xp >= r.xpRequired) {
         rank = r;
         } else {
@@ -30,5 +46,7 @@ export const getCurrentRank = (xp: number): Rank => {
 };
 
 export const getNextRank = (xp: number): Rank | null => {
-    return RANKS.find(r => xp < r.xpRequired) || null;
+    const { i18n } = useTranslation();
+
+    return i18n.language === 'en' ? RANKSEnglish.find(r => xp < r.xpRequired) || null :  RANKSArabic.find(r => xp < r.xpRequired) || null;
 };
