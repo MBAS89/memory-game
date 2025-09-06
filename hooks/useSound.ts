@@ -3,7 +3,7 @@
 // useSound.ts - Simple hook using global sound manager
 import { soundManager } from "@/utils/SoundManager";
 
-type SoundName = 'countdown' | 'success' | 'failure' | 'tap' | 'outOfHearts';
+type SoundName = 'countdown' | 'success' | 'failure' | 'tap' | 'outOfHearts' | 'purchase' | 'wrong';
 
 export const useSound = () => {
   const playSound = async (name: SoundName) => {

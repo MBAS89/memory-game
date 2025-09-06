@@ -1,5 +1,6 @@
 import BackButton from '@/components/BackButton';
 import { useProfileContext } from '@/contexts/ProfileContext';
+import { useSound } from '@/hooks/useSound';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +18,7 @@ const ShopScreen = () => {
     const { t } = useTranslation();
     const MAX_HEARTS = 5;
     const HEART_COST = 50;
+    const { playSound } = useSound()
 
     const buyHeart = () => {
         if (profile.hearts >= MAX_HEARTS) {
@@ -25,12 +27,14 @@ const ShopScreen = () => {
         }
 
         if (profile.coins >= HEART_COST) {
+            playSound('purchase')
             updateProfile({
                 coins: profile.coins - HEART_COST,
                 hearts: Math.min(profile.hearts + 1, MAX_HEARTS),
             });
             Alert.alert('❤️ Heart Purchased!', 'You gained 1 heart!');
         } else {
+            playSound('wrong')
             Alert.alert(
                 '🪙 Not Enough Coins!',
                 'You need 50 coins to buy a heart. Play more levels or complete the daily challenge to earn coins!'

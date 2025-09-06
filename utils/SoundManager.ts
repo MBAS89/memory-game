@@ -6,7 +6,9 @@ const SOUND_FILES = {
   success: require('../assets/sounds/success.mp3'),
   failure: require('../assets/sounds/failure.mp3'),
   tap: require('../assets/sounds/tap.mp3'),
-  outOfHearts:require('../assets/sounds/out_of_hearts.mp3')
+  outOfHearts:require('../assets/sounds/out_of_hearts.mp3'),
+  purchase:require('../assets/sounds/purchase.mp3'),
+  wrong:require('../assets/sounds/wrong.mp3')
 };
 
 type SoundName = keyof typeof SOUND_FILES;
