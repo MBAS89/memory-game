@@ -62,5 +62,6 @@
     "submit": "🎯 Submit",
     "reset": "🔄 Reset",
     "dailyChallengeFinish": "🌟 Already Completed",
-    "dailyChallengeFinishSub": "You crushed today’s challenge! Come back tomorrow for a new one."
+    "dailyChallengeFinishSub": "You crushed today’s challenge! Come back tomorrow for a new one.",
+    "Current": "Current"
 }

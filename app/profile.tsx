@@ -68,7 +68,7 @@ const ProfileScreen = () => {
                         🎯 {item.xpRequired.toLocaleString()} XP
                     </Text>
                 </View>
-                {isCurrent && <Text style={styles.currentBadge}>Current</Text>}
+                {isCurrent && <Text style={styles.currentBadge}>{t('Current')}</Text>}
             </View>
         );
     };
