@@ -1,6 +1,8 @@
 import StatusBarComponent from '@/components/StatusBar';
+import { useProfileContext } from '@/contexts/ProfileContext';
+import { useSound } from '@/hooks/useSound';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,10 +18,13 @@ import { formatTime, getTimeUntilReset, isToday } from '../utils/timeUtils';
 
 const HomeScreen = () => {
   const router = useRouter();
+  const { playSound, stopSound } = useSound();
   const [highestUnlockedLevel, setHighestUnlockedLevel] = usePersistedState<number>('highestUnlockedLevel', 1);
   const [lastDailyChallengeDate, setLastDailyChallengeDate] = usePersistedState<string | null>('lastDailyChallengeDate', null);
   const { t } = useTranslation();
   const [countdown, setCountdown] = useState('');
+
+  const { profile } = useProfileContext();
 
   // Handle daily challenge reset & countdown
   useEffect(() => {
@@ -77,11 +82,44 @@ const HomeScreen = () => {
             const isCompleted = levelNum < highestUnlockedLevel;
 
             return (
-              <Link
+              <TouchableOpacity
                 key={levelNum}
-                href={`/level/${levelNum}` as const}
-                asChild
+                activeOpacity={isUnlocked ? 0.7 : 1}
                 disabled={!isUnlocked}
+                onPress={() => {
+                  if (!isUnlocked) return; // Still respect lock
+
+                  // Check hearts before allowing navigation
+                  if (profile.hearts > 0) {
+                    // Proceed to level
+                    router.push(`/level/${levelNum}`);
+                  } else {
+                    // Not enough hearts
+                    playSound('outOfHearts');
+                    Alert.alert(
+                      t('outOfHearts'),
+                      `${t('usedAllHearts')}\n${t('canBuyOrWait')}\n${t('buyMore')}\n${t('waitUntilTomorrow')}\n${t('masterWasBeginner')}`,
+                      [
+                        {
+                          text: t('backToMenu'),
+                          style: 'cancel',
+                          onPress: () => {
+                            stopSound('outOfHearts');
+                            router.replace('/');
+                          },
+                        },
+                        {
+                          text: t('goToShop'),
+                          style: 'default',
+                          onPress: () => {
+                            stopSound('outOfHearts');
+                            router.replace('/shop');
+                          },
+                        },
+                      ]
+                    );
+                  }
+                }}
                 style={[
                   styles.levelButton,
                   !isUnlocked && styles.lockedButton,
@@ -89,16 +127,11 @@ const HomeScreen = () => {
                   isCurrent && styles.currentButton,
                 ]}
               >
-                <TouchableOpacity
-                  activeOpacity={isUnlocked ? 0.7 : 1}
-                  disabled={!isUnlocked}
-                >
-                  <Text style={styles.levelNumber}>
-                    {isUnlocked ? `${t('level')}${levelNum}` : '🔒'}
-                  </Text>
-                  {!isUnlocked && <Text style={styles.lockLabel}>{t('locked')}</Text>}
-                </TouchableOpacity>
-              </Link>
+                <Text style={styles.levelNumber}>
+                  {isUnlocked ? `${t('level')}${levelNum}` : '🔒'}
+                </Text>
+                {!isUnlocked && <Text style={styles.lockLabel}>{t('locked')}</Text>}
+              </TouchableOpacity>
             );
           })}
         </ScrollView>

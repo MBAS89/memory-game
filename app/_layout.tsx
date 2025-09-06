@@ -1,7 +1,7 @@
 import { soundManager } from '@/utils/SoundManager';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 import { ProfileProvider } from '../contexts/ProfileContext';
 import { useProfile } from '../hooks/useProfile';
@@ -52,17 +52,16 @@ export default function RootLayout() {
     };
   }, []);
 
-  // Claim daily heart on app open (if not already claimed)
-  useEffect(() => {
-    if (!loading && profile.username) {
-      claimDailyHeart();
-    }
-  }, [loading, profile.username]);
+  // Inside your main layout component
+  const hasClaimedRef = useRef(false); // Use a ref to track if we've attempted the claim
 
-  // Don't render anything until profile is loaded
-  if (loading || !soundsLoaded) {
-    return null;
-  }
+  useEffect(() => {
+    // Only run if we're done loading, a user is logged in, and we haven't tried to claim yet this session
+    if (!loading && profile.username && !hasClaimedRef.current) {
+      hasClaimedRef.current = true; // Mark that we've attempted to claim
+      claimDailyHeart(); // Call the function
+    }
+  }, [loading, profile.username]); // Dependencies are correct
 
   return (
     <ProfileProvider>
