@@ -24,7 +24,11 @@ const OnboardingScreen = () => {
             return;
         }
         updateProfile({ username: username.trim() });
-        router.replace('/');
+
+        // Add small delay to ensure AsyncStorage write completes
+        setTimeout(() => {
+            router.replace('/');
+        }, 100);
     };
 
     return (

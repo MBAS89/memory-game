@@ -43,4 +43,8 @@ const styles = StyleSheet.create({
     symbol: { fontSize: 28 },
 });
 
-export default React.memo(SymbolButton);
+export default React.memo(SymbolButton, (prev, next) => {
+    return prev.symbol === next.symbol &&
+        prev.disabled === next.disabled &&
+        prev.selected === next.selected;
+});

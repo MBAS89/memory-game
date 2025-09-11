@@ -2,7 +2,7 @@ import BackButton from '@/components/BackButton';
 import { useSound } from '@/hooks/useSound';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -35,6 +35,15 @@ const LevelScreen = () => {
 
     const [phase, setPhase] = useState<'countdown' | 'show' | 'input'>('countdown');
 
+    useEffect(() => {
+        return () => {
+            stopSound('countdown');
+            stopSound('success');
+            stopSound('failure');
+            stopSound('outOfHearts');
+        };
+    }, [stopSound]);
+
     // Generate sequence once per level
     const sequence = useMemo(() => generateSequence(level), [level]);
     const shuffledSymbols = useMemo(() => shuffleArray(sequence), [sequence]);
@@ -56,7 +65,7 @@ const LevelScreen = () => {
                 setUserSequence((s) => (s.includes(symbol) ? s : [...s, symbol]));
             }
         },
-        [playSound, sequence.length, userSequence.length]
+        [playSound, sequence.length, userSequence] // ✅ Correct: now includes full `userSequence`
     );
 
     const handleReset = useCallback(() => setUserSequence([]), []);

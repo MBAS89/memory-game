@@ -1,5 +1,6 @@
 import { useSound } from '@/hooks/useSound';
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
@@ -14,6 +15,7 @@ const Countdown: React.FC<CountdownProps> = ({ duration = 3, onComplete }) => {
     const scale = useSharedValue(1);
     const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const hasPlayedSound = useRef(false); // Prevent sound from playing more than once
+    const { i18n } = useTranslation();
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }],
@@ -34,33 +36,29 @@ const Countdown: React.FC<CountdownProps> = ({ duration = 3, onComplete }) => {
     useEffect(() => {
         if (count <= 0) return;
 
-        // Animate scale
         scale.value = withTiming(1.2, { duration: 100 }, () => {
             scale.value = withTiming(1, { duration: 100 });
         });
 
-        // Schedule next tick
-        timerRef.current = setTimeout(() => {
+        const id = setTimeout(() => {
             if (count > 1) {
                 setCount(count - 1);
             } else {
-                // Final step: show "Go!" and call onComplete
                 setCount(0);
-                setTimeout(() => onComplete(), 500); // Small delay to show "Go!"
+                // Use a small delay for "Go!" visual
+                const completeId = setTimeout(onComplete, 500);
+                // Clean up the complete timeout
+                return () => clearTimeout(completeId);
             }
         }, 1000);
 
-        return () => {
-            if (timerRef.current) {
-                clearTimeout(timerRef.current);
-            }
-        };
+        return () => clearTimeout(id);
     }, [count, onComplete, scale]);
 
     return (
         <Animated.View style={[styles.container, animatedStyle]}>
-            <Text style={styles.text}>
-                {count === 0 ? 'Go!' : count}
+            <Text style={i18n.language === 'ar' ? styles.text1 : styles.text}>
+                {count === 0 ? i18n.language === 'ar' ? 'انطلق' : 'Go!' : count}
             </Text>
         </Animated.View>
     );
@@ -85,6 +83,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#000',
     },
+    text1: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#000',
+    }
 });
 
 export default Countdown;

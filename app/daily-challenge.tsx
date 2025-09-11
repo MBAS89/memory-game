@@ -23,7 +23,7 @@ import { shuffleArray } from '../utils/shuffleArray';
 import { getTodayString, isToday } from '../utils/timeUtils';
 
 const DailyChallengeScreen = () => {
-    const { playSound } = useSound();
+    const { playSound, stopSound } = useSound();
     const { profile, updateProfile } = useProfileContext();
     const { t } = useTranslation();
     const router = useRouter();
@@ -40,6 +40,14 @@ const DailyChallengeScreen = () => {
     const [userSequence, setUserSequence] = useState<string[]>([]);
 
     const displayTime = 1600;
+
+    useEffect(() => {
+        return () => {
+            stopSound('countdown');
+            stopSound('success');
+            stopSound('failure');
+        };
+    }, [stopSound]);
 
     // Prevent replay if already completed today
     useEffect(() => {
