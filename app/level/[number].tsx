@@ -11,6 +11,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { AdEventType, InterstitialAd, TestIds } from 'react-native-google-mobile-ads';
+
 import Countdown from '../../components/Countdown';
 import GridContainer from '../../components/GridContainer';
 import SymbolButton from '../../components/SymbolButton';
@@ -18,6 +20,7 @@ import { usePersistedState } from '../../hooks/usePersistedState';
 import { generateSequence } from '../../utils/generateSequence';
 import { shuffleArray } from '../../utils/shuffleArray';
 
+import BannerAdComponent from '@/components/BannerAd';
 import StatusBarComponent from '@/components/StatusBar';
 import { useProfileContext } from '@/contexts/ProfileContext';
 import { useTranslation } from 'react-i18next';
@@ -68,6 +71,37 @@ const LevelScreen = () => {
         [playSound, sequence.length, userSequence] // ✅ Correct: now includes full `userSequence`
     );
 
+    // --- Interstitial Ad Logic ---
+    const [interstitial, setInterstitial] = useState<InterstitialAd | null>(null);
+    const [isInterstitialLoaded, setIsInterstitialLoaded] = useState(false);
+
+    useEffect(() => {
+        const admobId = __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-xxx/yyyy';
+
+        const interstitialAd = InterstitialAd.createForAdRequest(admobId, {
+            keywords: ['memory', 'puzzle'],
+            requestNonPersonalizedAdsOnly: true,
+        });
+
+        const loadCallback = () => setIsInterstitialLoaded(true);
+        const errorCallback = (error: unknown) => console.log('Interstitial error:', error);
+
+        interstitialAd.addAdEventListener(AdEventType.LOADED, loadCallback);
+        interstitialAd.addAdEventListener(AdEventType.ERROR, errorCallback);
+        interstitialAd.addAdEventListener(AdEventType.CLOSED, () => {
+            interstitialAd.load(); // Preload next
+            setIsInterstitialLoaded(false);
+        });
+
+        interstitialAd.load();
+
+        setInterstitial(interstitialAd);
+
+        return () => {
+            interstitialAd?.removeAllListeners();
+        };
+    }, []);
+
     const handleReset = useCallback(() => setUserSequence([]), []);
 
     const handleSubmit = useCallback(() => {
@@ -84,6 +118,30 @@ const LevelScreen = () => {
                 totalLevelsCompleted: profile.totalLevelsCompleted + 1,
             });
             playSound('success');
+
+            // 🔽 Check if level divisible by 5 → show interstitial
+            const shouldShowInterstitial =
+                !isLastLevel &&
+                nextLevel % 5 === 1; // e.g., after level 5 → show before level 6
+
+            const goToNextLevel = () => {
+                if (level === highestUnlockedLevel) {
+                    setHighestUnlockedLevel(Math.min(nextLevel, 100));
+                }
+                stopSound('success');
+                router.replace(`/level/${nextLevel}`);
+            };
+
+            const showAdAndProceed = () => {
+                if (shouldShowInterstitial && isInterstitialLoaded && interstitial) {
+                    interstitial.show();
+                    // After close, auto proceed
+                    interstitial.addAdEventListener(AdEventType.CLOSED, goToNextLevel);
+                } else {
+                    goToNextLevel();
+                }
+            };
+
             Alert.alert(
                 t('congrats'),
                 `${t('earnedOnLevel', { level })}\n\n${t('unlockedNext', { next: nextLevel })}\n${t('completedLevel')}\n${t('earnedCoin')}\n${t('earnedXp', { xp: earnedXP })}`,
@@ -106,7 +164,7 @@ const LevelScreen = () => {
                                     setHighestUnlockedLevel(Math.min(nextLevel, 100));
                                 }
                                 stopSound('success');
-                                router.replace(`/level/${nextLevel}`);
+                                showAdAndProceed(); // ✅ Now actually called!
                             },
                             style: 'default',
                         }
@@ -252,6 +310,7 @@ const LevelScreen = () => {
                         </View>
                     </View>
                 )}
+                <BannerAdComponent />
             </View>
         </LinearGradient>
     );

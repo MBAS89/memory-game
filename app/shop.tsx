@@ -1,5 +1,6 @@
 import BackButton from '@/components/BackButton';
 import { useProfileContext } from '@/contexts/ProfileContext';
+import { useRewardedAd } from '@/hooks/useRewardedAd';
 import { useSound } from '@/hooks/useSound';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
@@ -19,6 +20,8 @@ const ShopScreen = () => {
     const MAX_HEARTS = 5;
     const HEART_COST = 50;
     const { playSound } = useSound()
+
+    const { showAd: showRewardedAd, isReady } = useRewardedAd();
 
     const buyHeart = () => {
         if (profile.hearts >= MAX_HEARTS) {
@@ -90,6 +93,34 @@ const ShopScreen = () => {
                         <Text style={styles.maxMessage}>{t('fiveHearts')}</Text>
                     )}
                 </View>
+            </View>
+            {/* Rewarded Ad Section */}
+            <View style={styles.card}>
+                <Text style={styles.itemName}>🎁 Watch Ad for Extra Heart</Text>
+                <Text style={styles.itemPrice}>Earn 1 heart instantly!</Text>
+                <TouchableOpacity
+                    style={[
+                        styles.buyButton,
+                        !isReady && styles.disabledButton,
+                    ]}
+                    onPress={() => {
+                        showRewardedAd(() => {
+                            if (profile.hearts < 5) {
+                                updateProfile({ hearts: profile.hearts + 1 });
+                            } else {
+                                Alert.alert('❤️ Full Hearts', 'You already have 5 hearts!');
+                            }
+                        });
+                    }}
+                    disabled={!isReady}
+                >
+                    <Text style={styles.buyText}>
+                        {isReady ? 'Watch & Earn' : 'Loading...'}
+                    </Text>
+                </TouchableOpacity>
+                {!isReady && (
+                    <Text style={styles.maxMessage}>Preparing ad…</Text>
+                )}
             </View>
         </LinearGradient >
     );

@@ -1,4 +1,5 @@
 import BackButton from '@/components/BackButton';
+import BannerAdComponent from '@/components/BannerAd';
 import StatusBarComponent from '@/components/StatusBar';
 import { useProfileContext } from '@/contexts/ProfileContext';
 import { useSound } from '@/hooks/useSound';
@@ -204,6 +205,7 @@ const DailyChallengeScreen = () => {
                         </View>
                     </View>
                 )}
+                <BannerAdComponent />
             </View>
         </LinearGradient>
     );
